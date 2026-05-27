@@ -1,0 +1,41 @@
+<collection>
+  <vehicle>
+    <id>1</id>
+    <name>Bicycle Pro</name>
+    <coordinates>
+      <x>10</x>
+      <y>20.5</y>
+    </coordinates>
+    <creationDate>2024-03-01</creationDate>
+    <enginePower>50.0</enginePower>
+    <numberOfWheels>2</numberOfWheels>
+    <type>BICYCLE</type>
+    <fuelType>ELECTRICITY</fuelType>
+  </vehicle>
+  <vehicle>
+    <id>2</id>
+    <name>Hoverboard 3000</name>
+    <coordinates>
+      <x>200</x>
+      <y>300.75</y>
+    </coordinates>
+    <creationDate>2024-03-02</creationDate>
+    <enginePower>250.0</enginePower>
+    <numberOfWheels>4</numberOfWheels>
+    <type>HOVERBOARD</type>
+    <fuelType>MANPOWER</fuelType>
+  </vehicle>
+  <vehicle>
+    <id>3</id>
+    <name>Speed Ship</name>
+    <coordinates>
+      <x>200</x>
+      <y>300.75</y>
+    </coordinates>
+    <creationDate>2024-03-03</creationDate>
+    <enginePower>1000.5</enginePower>
+    <numberOfWheels>6</numberOfWheels>
+    <type>SHIP</type>
+    <fuelType>KEROSENE</fuelType>
+  </vehicle>
+</collection>
