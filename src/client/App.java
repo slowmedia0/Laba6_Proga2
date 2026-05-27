@@ -9,6 +9,7 @@ import java.util.Scanner;
 /**
  * Главный класс клиентского приложения
  */
+/**/
 public class App {
 
     public static void main(String[] args) {
