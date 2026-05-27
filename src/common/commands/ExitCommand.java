@@ -5,10 +5,17 @@ import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
 import server.utility.FileManager;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+
 public class ExitCommand extends AbstractCommand{
     private FileManager fileManager;
     private UserHandler userHandler;
     private String argument;
+    private  String FileName;
+    private  byte[] FileData;
 
     public ExitCommand(String argument) {
         super("exit","завершить программу (без сохранения в файл)");
@@ -18,6 +25,7 @@ public class ExitCommand extends AbstractCommand{
     public ExitCommand() {
         super("exit","завершить программу (без сохранения в файл)");
     }
+
 
     public void setArgument(String argument) {
         this.argument = argument;
@@ -35,6 +43,7 @@ public class ExitCommand extends AbstractCommand{
         return argument;
     }
 
+
     public ExitCodeCommand execute(){
         ExitCodeCommand valid  = validate();
         if (!valid.equals(ExitCodeCommand.OK)){
@@ -42,6 +51,12 @@ public class ExitCommand extends AbstractCommand{
         }
         try{
             userHandler.setExitCodeStatus(ExitCodeCommand.EXIT);
+            try {
+                Files.copy(file.toPath(), userHandler.getLoadFIle().toPath(), StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("Файл успешно перезаписан!");
+            } catch (IOException e) {
+                System.out.println("Не удалось перезаписать файл!");
+            }
             System.exit(0);
             return ExitCodeCommand.EXIT;
         }  catch (Exception e){
@@ -61,4 +76,6 @@ public class ExitCommand extends AbstractCommand{
             return ExitCodeCommand.ERROR;
         }
     }
+
+
 }

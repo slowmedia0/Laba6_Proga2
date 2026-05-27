@@ -9,36 +9,43 @@ public class CommandRequest implements Serializable {
     private final String nameOfCommand;
     private final String argument;
     private final Vehicle vehicle;
-    private final File file;
+    private  String FileName;
+    private  byte[] FileData;
 
-    public CommandRequest(String nameOfCommand, String argument, Vehicle vehicle, File file) {
+    public CommandRequest(String nameOfCommand, String argument, Vehicle vehicle, String fileName, byte[] fileData) {
         this.nameOfCommand = nameOfCommand;
         this.argument = argument;
         this.vehicle = vehicle;
-        this.file = file;
+        this.FileName = fileName;
+        this.FileData = fileData;
     }
 
     public CommandRequest(String nameOfCommand, String argument) {
         this.nameOfCommand = nameOfCommand;
         this.argument = argument;
         this.vehicle = null;
-        this.file=null;
+        this.FileName = null;
+        this.FileData = null;
     }
 
     public CommandRequest(String nameOfCommand, String argument, Vehicle vehicle) {
         this.nameOfCommand = nameOfCommand;
         this.argument = argument;
         this.vehicle = vehicle;
-        this.file=null;
+        this.FileName = null;
+        this.FileData = null;
     }
 
 
-    public CommandRequest(String nameOfCommand, String argument, File file) {
+    public CommandRequest(String nameOfCommand, String argument, String fileName, byte[] fileData) {
         this.nameOfCommand = nameOfCommand;
         this.argument = argument;
         this.vehicle = null;
-        this.file=file;
+        this.FileName = fileName;
+        this.FileData = fileData;
     }
+
+
 
     public String getNameOfCommand() {
         return nameOfCommand;
@@ -52,7 +59,11 @@ public class CommandRequest implements Serializable {
         return vehicle;
     }
 
-    public File getFile() {
-        return file;
+    public String getFileName() {
+        return FileName;
+    }
+
+    public byte[] getFileData() {
+        return FileData;
     }
 }

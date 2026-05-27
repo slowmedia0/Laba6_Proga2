@@ -8,6 +8,9 @@ import common.interaction.Response;
 import server.utility.FileManager;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -16,6 +19,8 @@ public class UserHandler {
     public ExitCodeCommand exitCodeStatus = ExitCodeCommand.CTRL_C;
     private UDPClient udpClient;
     private Scanner userScanner;
+    private  String loadFileName;      // имя загрузочного файла
+    private  byte[] loadFileData;      // содержимое загрузочного файла (для exit/save)
 
 
     public ExitCodeCommand getExitCodeStatus() {
@@ -31,15 +36,34 @@ public class UserHandler {
         this.userScanner = userScanner;
     }
 
+    public String getLoadFileName() {
+        return loadFileName;
+    }
+
+    public byte[] getLoadFileData() {
+        return loadFileData;
+    }
+
     public void interactiveMode(String nameOfLoadFile) {
         //Считаем путь или имя загрузочного файла
         String nameOfFile=nameOfLoadFile;
         while (Validator.validateNameOfFile(nameOfFile, FileManager.ModeOfFileManager.READ_COLLECTION)==false){
             nameOfFile= FieldReaderClient.askFile();
         }
+        this.loadFileName=nameOfFile;
+
+        try{
+            File file = new File(nameOfFile);
+            this.loadFileData = Files.readAllBytes(file.toPath());
+            System.out.println("Загрузочный файл прочитан: " + nameOfFile + " (" + loadFileData.length + " байт)");
+        } catch (IOException e) {
+            System.err.println("Ошибка чтения загрузочного файла: " + e.getMessage());
+            this.loadFileData = new byte[0]; // пустой массив в случае ошибки
+        }
+
 
         //Отправляем загрузочного файл на сервер
-        sendLoadFileToServer(nameOfFile);
+        sendLoadFileToServer();
 
 
         //Считывание команд с терминала пользователя
@@ -57,21 +81,34 @@ public class UserHandler {
                     command.add("");
                 }
 
-                //Формирование объект-команду
+
+                // Создание объекта команды
                 Command commandObject = createCommand(command.get(0), command.get(1));
 
-                //Валидация команды и Отправка команды на сервер
-                if (commandObject != null & commandObject.validate().equals(ExitCodeCommand.OK)){
-                    udpClient.sendRequest(createCommandRequest(commandObject));
-                    if (commandObject.getNameOfCommand().equals("exit")){
-                        //Получаем файл от сервера с измененной коллекцией
-                        //....
+                if (commandObject == null) continue;
 
-                        if (!commandObject.execute().equals(ExitCodeCommand.EXIT)){
-                            System.out.println("Не удалось выполнить команду " + commandObject.getNameOfCommand() + " " + commandObject.getArgument() + "!");
-                        }
+                // Валидация команды
+                if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
+                    System.out.println("Команда не валидна");
+                    continue;
+                }
+
+                // Создание запроса и отправка на сервер
+                CommandRequest request = createCommandRequest(commandObject);
+                Response response = udpClient.sendRequest(request);
+
+                if ("exit".equalsIgnoreCase(commandObject.getNameOfCommand())) {
+                    handleExitResponse(response);
+                    return;
+                }
+
+                // Вывод ответа сервера (для остальных команд)
+                if (response != null) {
+                    if (response.getMessage() != null && !response.getMessage().isEmpty()) {
+                        System.out.println(response.getMessage());
                     }
                 }
+
             }
         }
         catch(NoSuchElementException e){
@@ -152,7 +189,7 @@ public class UserHandler {
                 }
                 case "execute_script": {
                     ExecuteScriptCommand executeScriptCommand = (ExecuteScriptCommand) command;
-                    return new CommandRequest(command.getNameOfCommand(),command.getArgument(),executeScriptCommand.getFile());
+                    return new CommandRequest(command.getNameOfCommand(),command.getArgument(),executeScriptCommand.getFileName(),executeScriptCommand.getFileData());
                 }
                 case "add": {
                     AddCommand addCommand = (AddCommand) command;
@@ -172,22 +209,46 @@ public class UserHandler {
             }
     }
 
-    private void sendLoadFileToServer(String fileName) {
+    private void sendLoadFileToServer() {
         try {
-            File file = new File(fileName);
-            System.out.println("Отправка загрузочного файла на сервер: " + fileName);
-            CommandRequest loadRequest = new CommandRequest("load_file", fileName, file);
+            System.out.println("Отправка загрузочного файла на сервер: " + loadFileName);
+            CommandRequest loadRequest = new CommandRequest("load_file", loadFileName, loadFileName, loadFileData);
             Response response = udpClient.sendRequest(loadRequest);
             if (response != null && response.isSuccess()) {
-                System.out.println("Загрузочный-файл успешно отправлен и загружен на сервер.");
+                System.out.println("Загрузочный файл успешно отправлен и обработан сервером.");
             } else {
                 System.out.println("Предупреждение: файл отправлен, но сервер вернул ошибку.");
             }
 
         } catch (Exception e) {
-            System.out.println("Ошибка при отправке загрузочного файла на сервер: " + e.getMessage());
+            System.out.println("Ошибка при отправке загрузочного файла: " + e.getMessage());
         }
     }
 
+    /**
+     * Обработка ответа на команду exit
+     */
+    private void handleExitResponse(Response response) {
+        if (response != null) {
+            System.out.println(response.getMessage());
+
+            if (response.getFileData() != null && response.getFileName() != null) {
+                try {
+                    // Перезаписываем локальный загрузочный файл
+                    Files.write(new File(loadFileName).toPath(), response.getFileData());
+                    System.out.println("Файл коллекции успешно обновлён: " + loadFileName);
+                } catch (IOException e) {
+                    System.out.println("Не удалось сохранить файл на клиенте: " + e.getMessage());
+                }
+            }
+        } else {
+            System.out.println("Сервер не ответил при выходе.");
+        }
+
+        System.out.println("Клиент завершает работу.");
+        udpClient.close();
+        exitCodeStatus = ExitCodeCommand.EXIT;
+        System.exit(0);
+    }
 
 }
