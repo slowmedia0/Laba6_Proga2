@@ -93,6 +93,10 @@ public class CollectionManager{
                 "Size: " + C.size() + "\n");
     }
 
+    public void sortByName() {
+        C.sort(Comparator.comparing(Vehicle::getName));
+    }
+
     /**
      * Проверяет наличие элемента с данным id.
      *

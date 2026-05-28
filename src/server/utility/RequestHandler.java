@@ -1,65 +1,123 @@
 package server.utility;
 
-import common.ExitCodeCommand;
 import common.commands.CommandRequest;
 import common.interaction.Response;
-import common.models.Vehicle;
+import common.utility.Serializer;
+import common.ExitCodeCommand;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
+import java.nio.channels.Selector;
 
 public class RequestHandler {
 
-    private final Console console;
-    private final FileManager fileManager;
+    private static final int BUFFER_SIZE = 65536;
 
-    public RequestHandler(Console console, FileManager fileManager) {
-        this.console = console;
-        this.fileManager = fileManager;
+    /**
+     * Главный метод обработки запроса — вызывается из UDPServer
+     */
+    public static void handleRequest(DatagramChannel channel, Selector selector,
+                                     Console console, FileManager fileManager) {
+
+        try {
+            ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+            SocketAddress clientAddress = channel.receive(buffer);
+
+            if (clientAddress == null) return;
+
+            buffer.flip();
+            byte[] requestBytes = new byte[buffer.remaining()];
+            buffer.get(requestBytes);
+
+            CommandRequest request = Serializer.deserialize(requestBytes);
+
+            System.out.println("← Получена команда: " + request.getNameOfCommand() + " от " + clientAddress);
+
+            Response response;
+
+            String cmd = request.getNameOfCommand();
+
+            if ("load_file".equals(cmd)) {
+                response = handleLoadFile(request, console);
+            }
+            else if ("exit".equals(cmd)) {
+                response = handleExit(console, fileManager);
+            }
+            else {
+                response = processCommand(request, console);
+            }
+
+            // Отправляем ответ
+            ResponseSender.sendResponse(channel, clientAddress, response);
+
+        } catch (Exception e) {
+            System.err.println("Ошибка обработки запроса: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
-    public Response handle(CommandRequest request) {
+    // ==================== Вспомогательные методы ====================
+
+    private static Response handleLoadFile(CommandRequest request, Console console) {
         try {
-            String cmd = request.getNameOfCommand().toLowerCase().trim();
-            String arg = request.getArgument() != null ? request.getArgument() : "";
-            Vehicle vehicle = request.getVehicle();
-            File fileArg = request.getFile();
+            String fileName = request.getFileName();
+            byte[] fileData = request.getFileData();
+
+            if (fileName == null || fileData == null) {
+                return new Response(ExitCodeCommand.ERROR, "Не переданы данные файла");
+            }
+
+            ExitCodeCommand result = console.loadCollectionFromBytes(fileName, fileData);
+            return new Response(result, result == ExitCodeCommand.OK
+                    ? "Файл успешно загружен на сервер"
+                    : "Не удалось загрузить файл");
+        } catch (Exception e) {
+            return new Response(ExitCodeCommand.ERROR, "Ошибка загрузки файла: " + e.getMessage());
+        }
+    }
+
+    private static Response handleExit(Console console, FileManager fileManager) {
+        try {
+            fileManager.writeCollection();
+            byte[] fileData = fileManager.getCollectionAsBytes();
+
+            Response response = new Response(ExitCodeCommand.OK, "Сервер завершил работу. Коллекция сохранена.");
+            response.setFileData(fileData);
+            response.setFileName(console.getLoadFileName());
+
+            return response;
+        } catch (Exception e) {
+            return new Response(ExitCodeCommand.ERROR, "Ошибка при exit: " + e.getMessage());
+        }
+    }
+
+    private static Response processCommand(CommandRequest request, Console console) {
+        try {
+            String commandName = request.getNameOfCommand();
+            String argument = request.getArgument() != null ? request.getArgument().toString() : "";
 
             ExitCodeCommand result;
 
-            if (vehicle != null || fileArg != null) {
-                result = console.launchCommand(cmd, arg, vehicle, fileArg);
+            if (request.getVehicle() != null) {
+                result = console.launchCommand(commandName, argument, request.getVehicle(), null,null);
             } else {
-                result = console.launchCommand(cmd, arg);
+                result = console.launchCommand(commandName, argument);
             }
 
-            // Специальная обработка exit
-            if ("exit".equals(cmd)) {
-                File savedFile = fileManager.getCurrentFile();
-                byte[] fileData = null;
-                String fileName = null;
+            // ←←← СОРТИРОВКА ПОСЛЕ КОМАНДЫ ←←←
+            console.sortCollectionIfNeeded(commandName);
 
-                if (savedFile != null && savedFile.exists()) {
-                    fileName = savedFile.getName();
-                    try {
-                        fileData = Files.readAllBytes(savedFile.toPath());
-                    } catch (IOException ignored) {}
-                }
-
-                return new Response(ExitCodeCommand.EXIT,
-                        "Коллекция успешно сохранена на сервере.",
-                        "exit", fileName, fileData);
-            }
-
-            String message = (result == ExitCodeCommand.OK || result == ExitCodeCommand.SUCCESS)
+            String message = (result == ExitCodeCommand.OK)
                     ? "Команда выполнена успешно."
                     : "Команда выполнена с ошибками.";
 
-            return new Response(result, message, cmd);
+            Response response = new Response(result, message);
+
+            return response;
 
         } catch (Exception e) {
-            return new Response(ExitCodeCommand.ERROR, "Ошибка: " + e.getMessage());
+            return new Response(ExitCodeCommand.ERROR, "Ошибка выполнения команды: " + e.getMessage());
         }
     }
 }

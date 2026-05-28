@@ -3,6 +3,7 @@ package server.utility;
 import common.exceptions.FieldReadException;
 import common.exceptions.NotExistException;
 import client.utility.Validator;
+import common.utility.Serializer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -272,6 +273,33 @@ public class FileManager {
         catch (IOException e) {
             System.out.println(e.getMessage() + " : Непредвиденная ошибка! Возможно файл используется уже кем-то.");
             return null;
+        }
+    }
+
+    /**Возвращает текущую коллекцию в виде байтов (для отправки клиенту при exit)
+     */
+    public byte[] getCollectionAsBytes() {
+        try {
+            // Сериализуем коллекцию
+            return Serializer.serialize(collectionManager.getCollection());
+        } catch (Exception e) {
+            System.err.println("Ошибка сериализации коллекции: " + e.getMessage());
+            return new byte[0];
+        }
+    }
+
+    /**
+     * Загружает коллекцию из байтов (альтернатива, если не хочешь создавать файл)
+     */
+    public void loadFromBytes(byte[] data) {
+        try {
+            @SuppressWarnings("unchecked")
+            Stack<Vehicle> loadedCollection = (Stack<Vehicle>) Serializer.deserialize(data);
+            collectionManager.setCollection(loadedCollection);
+            collectionManager.initializeArrayId();
+            System.out.println("Коллекция успешно загружена из байтов (" + loadedCollection.size() + " элементов)");
+        } catch (Exception e) {
+            System.err.println("Ошибка загрузки коллекции из байтов: " + e.getMessage());
         }
     }
 }

@@ -9,6 +9,9 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.net.FileNameMap;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -25,7 +28,9 @@ public class Console {
 
     private final CommandManger commandManager;
     private final FileManager fileManager;
-    private  File loadFile;
+    private  String loadFileName;      // имя загрузочного файла
+    private  byte[] loadFileData;      // содержимое загрузочного файла (для exit/save)
+    private File currentLoadFile;     // ← добавил (используется в loadCollection)
 
     /**
      * Аргументы выполняемых скриптов.
@@ -92,16 +97,22 @@ public class Console {
         return fields;
     }
 
-    public File getLoadFile() {
-        return loadFile;
+    public String getLoadFileName() {
+        return loadFileName;
     }
 
+    public byte[] getLoadFileData() {
+        return loadFileData;
+    }
 
-
-
-
-
-    public ExitCodeCommand scriptMode(File file) {
+    public ExitCodeCommand scriptMode(String FileName, byte[] FileData) {
+        File file = new File(FileName);
+        try {
+            Files.write(file.toPath(), FileData);
+            System.out.println("Файл успешно перезаписан!");
+        } catch (IOException e) {
+            System.out.println("Не удалось перезаписать файл!");
+        }
         ExitCodeCommand flagSuccessExecute = ExitCodeCommand.OK;
         try {
             int n = -1;
@@ -184,7 +195,7 @@ public class Console {
      * Загружает коллекцию из файла при запуске сервера.
      */
     public void loadCollection(File loadFile) throws IOException, ParserConfigurationException, SAXException {
-        this.loadFile = loadFile;
+        this.currentLoadFile = loadFile;
         flagReadCollection = true;
         flagScript = false;
 
@@ -211,6 +222,39 @@ public class Console {
         }
     }
 
+    /**
+         * Загрузка коллекции из байтов, пришедших от клиента
+         */
+       public ExitCodeCommand loadCollectionFromBytes(String fileName, byte[] fileData) {
+          try {
+                this.loadFileName = fileName;
+                this.loadFileData = fileData;
+                File tempFile = new File(fileName);
+                Files.write(tempFile.toPath(), fileData);
+                loadCollection(tempFile);
+                System.out.println("Коллекция успешно загружена из данных клиента.");
+                return ExitCodeCommand.OK;
+            } catch (Exception e) {
+                        System.err.println("Ошибка загрузки коллекции из байтов: " + e.getMessage());
+                        return ExitCodeCommand.ERROR;
+          }
+         }
+
+    // Добавь этот метод в класс Console
+    public void sortCollectionIfNeeded(String commandName) {
+        switch (commandName.toLowerCase()) {
+            case "add":
+            case "update":
+            case "remove_by_id":
+            case "remove_greater":
+            case "clear":
+            case "reorder":
+            case "sort":
+                collectionManager.sortByName();   // нужно добавить в CollectionManager
+                System.out.println("Коллекция отсортирована по имени после команды: " + commandName);
+                break;
+        }
+    }
 
     public ExitCodeCommand launchCommand(String mnemonics, String argument) {
         try {
@@ -250,12 +294,19 @@ public class Console {
                     return exitCodeStatus;
                 }
                 case "exit": {
-                    ExitCodeCommand exitCodeCommand=ExitCodeCommand.OK;
-                    if (!fileManager.writeCollection()){
-                        exitCodeCommand=ExitCodeCommand.ERROR;
-                    }
-                    return exitCodeCommand;
+                    boolean saved = fileManager.writeCollection();
 
+                    // Сортируем перед отправкой
+                    collectionManager.sortByName();
+
+                    // Подготавливаем данные для клиента
+                    this.loadFileData = fileManager.getCollectionAsBytes();
+                    this.loadFileName = currentLoadFile.getName();
+
+                    ExitCodeCommand exitCodeCommand = saved ? ExitCodeCommand.OK : ExitCodeCommand.ERROR;
+
+                    System.out.println("Сервер завершает работу. Коллекция " + (saved ? "сохранена." : "не сохранена!"));
+                    return exitCodeCommand;
                 }
                 case "remove_greater": {
                     exitCodeStatus = commandManager.removeGreater(argument);
@@ -297,69 +348,69 @@ public class Console {
     }
 
 
-        public ExitCodeCommand launchCommand (String mnemonics, String argument, Vehicle vehicle,File file){
+        public ExitCodeCommand launchCommand (String mnemonics, String argument, Vehicle vehicle,String FileName, byte[] FileData){
             try {
                 switch (mnemonics) {
                     case "help": {
-                        exitCodeStatus = commandManager.help(argument, null,null);
+                        exitCodeStatus = commandManager.help(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "info": {
-                        exitCodeStatus = commandManager.info(argument, null,null);
+                        exitCodeStatus = commandManager.info(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "show": {
-                        exitCodeStatus = commandManager.show(argument, null,null);
+                        exitCodeStatus = commandManager.show(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "add": {
-                        exitCodeStatus = commandManager.add(argument, vehicle,null);
+                        exitCodeStatus = commandManager.add(argument, vehicle,null,null);
                         return exitCodeStatus;
                     }
                     case "update": {
-                        exitCodeStatus = commandManager.updateById(argument, vehicle,null);
+                        exitCodeStatus = commandManager.updateById(argument, vehicle,null,null);
                         return exitCodeStatus;
                     }
                     case "remove_by_id": {
-                        exitCodeStatus = commandManager.removeById(argument, null,null);
+                        exitCodeStatus = commandManager.removeById(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "clear": {
-                        exitCodeStatus = commandManager.clear(argument, null,null);
+                        exitCodeStatus = commandManager.clear(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "execute_script": {
                         flagScript = true;
                         commandManager.getExecuteScriptCommand().setConsole(this);
-                        exitCodeStatus = commandManager.executeScript(argument, null,file);
+                        exitCodeStatus = commandManager.executeScript(argument, null,FileName,FileData);
                         return exitCodeStatus;
                     }
                     case "exit": {
-                        exitCodeStatus = commandManager.exit(argument, null,null);
+                        exitCodeStatus = commandManager.exit(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "remove_greater": {
-                        exitCodeStatus = commandManager.removeGreater(argument, vehicle,null);
+                        exitCodeStatus = commandManager.removeGreater(argument, vehicle,null,null);
                         return exitCodeStatus;
                     }
                     case "reorder": {
-                        exitCodeStatus = commandManager.reorder(argument, null,null);
+                        exitCodeStatus = commandManager.reorder(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "sort": {
-                        exitCodeStatus = commandManager.sort(argument, null,null);
+                        exitCodeStatus = commandManager.sort(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "sum_of_engine_power": {
-                        exitCodeStatus = commandManager.sumOfEnginePower(argument, null,null);
+                        exitCodeStatus = commandManager.sumOfEnginePower(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "print_field_ascending_number_of_wheels": {
-                        exitCodeStatus = commandManager.printFieldAscendingNumberOfWheels(argument, null,null);
+                        exitCodeStatus = commandManager.printFieldAscendingNumberOfWheels(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     case "print_field_descending_number_of_wheels": {
-                        exitCodeStatus = commandManager.printFieldDescendingNumberOfWheels(argument, null,null);
+                        exitCodeStatus = commandManager.printFieldDescendingNumberOfWheels(argument, null,null,null);
                         return exitCodeStatus;
                     }
                     default: {

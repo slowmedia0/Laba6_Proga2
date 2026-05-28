@@ -144,70 +144,71 @@ public class CommandManger {
 
 
 
-    public ExitCodeCommand help(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand help(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         helpCommand.setCommands(commands);
         helpCommand.setArgument(argument);
         return helpCommand.execute();
     }
-    public ExitCodeCommand info(String argument, Vehicle vehicle,File file){
+    public ExitCodeCommand info(String argument, Vehicle vehicle,String FileName,byte[] FileData){
         infoCommand.setArgument(argument);
         return infoCommand.execute();}
-    public ExitCodeCommand show(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand show(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         showCommand.setArgument(argument);
         return showCommand.execute();}
 
-    public ExitCodeCommand add(String argument, Vehicle vehicle,File file){
+    public ExitCodeCommand add(String argument, Vehicle vehicle,String FileName,byte[] FileData){
         addCommand.setArgument(argument);
         addCommand.setVehicle(vehicle);
         return addCommand.execute();}
 
-    public ExitCodeCommand updateById(String argument,Vehicle vehicle,File file){
+    public ExitCodeCommand updateById(String argument,Vehicle vehicle,String FileName,byte[] FileData){
         updateIdCommand.setArgument(argument);
         updateIdCommand.setVehicle(vehicle);
         return updateIdCommand.execute();}
 
-    public ExitCodeCommand removeById(String argument, Vehicle vehicle,File file){
+    public ExitCodeCommand removeById(String argument, Vehicle vehicle,String FileName,byte[] FileData){
         removeByIdCommand.setArgument(argument);
         return removeByIdCommand.execute();}
 
-    public ExitCodeCommand clear(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand clear(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         clearCommand.setArgument(argument);
         return clearCommand.execute();}
 
-    public ExitCodeCommand executeScript(String argument, Vehicle vehicle,File file){
+    public ExitCodeCommand executeScript(String argument, Vehicle vehicle,String FileName,byte[] FileData){
         executeScriptCommand.setArgument(argument);
-        executeScriptCommand.setFile(file);
+        executeScriptCommand.setFileName(FileName);
+        executeScriptCommand.setFileData(FileData);
         return executeScriptCommand.execute();};
 
-    public ExitCodeCommand exit(String argument, Vehicle vehicle,File file){
+    public ExitCodeCommand exit(String argument, Vehicle vehicle,String FileName,byte[] FileData){
         exitCommand.setArgument(argument);
         return exitCommand.execute();}
 
-    public ExitCodeCommand removeGreater(String argument, Vehicle vehicle,File file){
+    public ExitCodeCommand removeGreater(String argument, Vehicle vehicle,String FileName,byte[] FileData){
         removeGreaterCommand.setArgument(argument);
         removeGreaterCommand.setVehicle(vehicle);
         return removeGreaterCommand.execute();}
 
 
-    public ExitCodeCommand reorder(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand reorder(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         reorderCommand.setArgument(argument);
         return reorderCommand.execute();}
 
 
-    public ExitCodeCommand sort(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand sort(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         sortCommand.setArgument(argument);
         return sortCommand.execute();}
 
-    public ExitCodeCommand sumOfEnginePower(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand sumOfEnginePower(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         sumOfEnginePowerCommand.setArgument(argument);
         return sumOfEnginePowerCommand.execute();}
 
-    public ExitCodeCommand printFieldAscendingNumberOfWheels(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand printFieldAscendingNumberOfWheels(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         printFieldAscendingNumberOfWheelsCommand.setArgument(argument);
         return printFieldAscendingNumberOfWheelsCommand.execute();}
 
 
-    public ExitCodeCommand printFieldDescendingNumberOfWheels(String argument, Vehicle vehicle, File file){
+    public ExitCodeCommand printFieldDescendingNumberOfWheels(String argument, Vehicle vehicle, String FileName,byte[] FileData){
         printFieldDescendingNumberOfWheelsCommand.setArgument(argument);
         return printFieldDescendingNumberOfWheelsCommand.execute();}
 

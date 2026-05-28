@@ -20,14 +20,13 @@ public class UDPClient {
     private final SocketAddress serverAddress;
 
     private static final int BUFFER_SIZE = 65536;
-    private static final int TIMEOUT_MS = 8000; // 8 секунд
+    private static final int TIMEOUT_MS = 8000;
 
     public UDPClient(String host, int port) throws IOException {
         this.serverAddress = new InetSocketAddress(host, port);
 
         this.channel = DatagramChannel.open();
         this.channel.configureBlocking(false);
-        this.channel.connect(serverAddress);
 
         this.selector = Selector.open();
         this.channel.register(selector, SelectionKey.OP_READ);
@@ -67,11 +66,6 @@ public class UDPClient {
             responseBuffer.get(responseBytes);
 
             Response response = Serializer.deserialize(responseBytes);
-
-            // Выводим сообщение сервера (если есть)
-            if (response.getMessage() != null && !response.getMessage().isEmpty()) {
-                System.out.println(response.getMessage());
-            }
 
             return response;
 

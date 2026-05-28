@@ -4,51 +4,43 @@ import common.ExitCodeCommand;
 
 import java.io.Serializable;
 
+/**
+ * Класс ответа от сервера клиенту
+ */
 public class Response implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    private final ExitCodeCommand status;
-    private final String message;
-    private final String commandName;
-    private final String fileName;      // имя файла
-    private final byte[] fileData;      // содержимое файла (для exit/save)
+    private ExitCodeCommand exitCode;
+    private String message;
+    private String fileName;
+    private byte[] fileData;
 
     // ==================== Конструкторы ====================
 
-    public Response(ExitCodeCommand status, String message) {
-        this(status, message, null, null, null);
-    }
-
-    public Response(ExitCodeCommand status, String message, String commandName) {
-        this(status, message, commandName, null, null);
-    }
-
-    public Response(ExitCodeCommand status, String message, String fileName, byte[] fileData) {
-        this(status, message, null, fileName, fileData);
-    }
-
-    public Response(ExitCodeCommand status, String message, String commandName,
-                    String fileName, byte[] fileData) {
-        this.status = status;
+    public Response(ExitCodeCommand exitCode, String message) {
+        this.exitCode = exitCode;
         this.message = message;
-        this.commandName = commandName;
+    }
+
+    public Response(ExitCodeCommand exitCode, String message, String fileName, byte[] fileData) {
+        this.exitCode = exitCode;
+        this.message = message;
         this.fileName = fileName;
         this.fileData = fileData;
     }
 
-    // ==================== Геттеры ====================
+    public Response(String message) {
+        this(ExitCodeCommand.OK, message);
+    }
 
-    public ExitCodeCommand getStatus() {
-        return status;
+    // ==================== Геттеры и Сеттеры ====================
+
+    public ExitCodeCommand getExitCode() {
+        return exitCode;
     }
 
     public String getMessage() {
         return message;
-    }
-
-    public String getCommandName() {
-        return commandName;
     }
 
     public String getFileName() {
@@ -59,13 +51,20 @@ public class Response implements Serializable {
         return fileData;
     }
 
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData;
+    }
+
     public boolean isSuccess() {
-        return status == ExitCodeCommand.OK;
+        return exitCode == ExitCodeCommand.OK;
     }
 
     @Override
     public String toString() {
-        return "Response{status=" + status + ", message='" + message +
-                "', fileName=" + (fileName != null ? fileName : "null") + "}";
+        return "Response{exitCode=" + exitCode + ", message='" + message + "'}";
     }
 }

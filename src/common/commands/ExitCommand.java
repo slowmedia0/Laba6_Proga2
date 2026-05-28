@@ -49,20 +49,7 @@ public class ExitCommand extends AbstractCommand{
         if (!valid.equals(ExitCodeCommand.OK)){
             return valid;
         }
-        try{
-            userHandler.setExitCodeStatus(ExitCodeCommand.EXIT);
-            try {
-                Files.copy(file.toPath(), userHandler.getLoadFIle().toPath(), StandardCopyOption.REPLACE_EXISTING);
-                System.out.println("Файл успешно перезаписан!");
-            } catch (IOException e) {
-                System.out.println("Не удалось перезаписать файл!");
-            }
-            System.exit(0);
-            return ExitCodeCommand.EXIT;
-        }  catch (Exception e){
-            System.out.println("Неожиданная ошибка: " + e.getMessage());
-            return ExitCodeCommand.ERROR;
-        }
+        return ExitCodeCommand.EXIT;
     }
 
     public ExitCodeCommand validate(){

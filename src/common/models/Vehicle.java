@@ -66,7 +66,7 @@ public class Vehicle implements Comparable<Vehicle> {
      * @return результат сравнения
      */
     public int compareTo(Vehicle element){
-        return Float.compare(Float.valueOf(enginePower), Float.valueOf(element.getEnginePower()));
+        return this.name.compareTo(element.getName());
     }
 
     /**
