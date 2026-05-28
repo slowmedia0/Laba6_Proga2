@@ -2,6 +2,7 @@ package client;
 
 import client.utility.FieldReaderClient;
 import client.utility.UserHandler;
+import common.ExitCodeCommand;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -13,7 +14,7 @@ import java.util.StringJoiner;
 public class App {
 
     public static void main(String[] args) {
-
+        /*
         if (args.length != 3) {
             System.out.println("Ошибка: необходимо указать три аргумента!");
             System.out.println("Использование: java -jar client.jar <host> <port> <filename>");
@@ -31,6 +32,10 @@ public class App {
             System.exit(1);
             return;
         }
+         */
+        String host = "localhost";
+        int port = 2222;
+        String filename = "src\\inputdata.xml";
 
         System.out.println("=== Клиент запускается ===");
         System.out.println("Сервер: " + host + ":" + port);
@@ -51,6 +56,15 @@ public class App {
             // Запуск интерактивного режима
             userHandler.interactiveMode(filename);
 
+            Thread mainThread = Thread.currentThread();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (userHandler.getExitCodeStatus().equals(ExitCodeCommand.CTRL_C)) {
+                    System.out.println();
+                    System.out.println("Вы использовали Ctrl+C.");
+                }
+                System.out.println("Завершение программы");
+            }));
+
         } catch (IOException e) {
             System.err.println("Не удалось подключиться к серверу " + host + ":" + port);
             System.err.println("Ошибка: " + e.getMessage());
@@ -58,5 +72,6 @@ public class App {
             System.err.println("Критическая ошибка в клиенте:");
             e.printStackTrace();
         }
+
     }
 }

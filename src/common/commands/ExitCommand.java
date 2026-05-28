@@ -3,6 +3,7 @@ package common.commands;
 import client.utility.UserHandler;
 import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
+import common.interaction.Response;
 import server.utility.FileManager;
 
 import java.io.File;
@@ -17,6 +18,8 @@ public class ExitCommand extends AbstractCommand{
     private  String FileName;
     private  byte[] FileData;
 
+
+    //Для метода createCommand из UserHandler
     public ExitCommand(String argument) {
         super("exit","завершить программу (без сохранения в файл)");
         this.argument=argument;
@@ -49,6 +52,45 @@ public class ExitCommand extends AbstractCommand{
         if (!valid.equals(ExitCodeCommand.OK)){
             return valid;
         }
+
+
+        // === Логика сервера ===
+        if (fileManager != null) {
+            try {
+                println("Выполняется сохранение коллекции...");
+
+                SaveCommand saveCommand = new SaveCommand(fileManager);
+                ExitCodeCommand saveResult = saveCommand.execute();
+
+                if (!saveResult.equals(ExitCodeCommand.OK)) {
+                    println("Предупреждение: не удалось сохранить коллекцию.");
+                } else {
+                    println("Коллекция успешно сохранена.");
+                }
+
+                // Подготавливаем ответ для клиента
+                byte[] fileData = fileManager.getCollectionAsBytes();
+                String fileName = fileManager.getLoadFile().getName();
+
+                Response customResponse = new Response(ExitCodeCommand.EXIT,
+                        "Клиент успешно отключён.\nКоллекция сохранена на сервере.");
+
+                customResponse.setFileData(fileData);
+                customResponse.setFileName(fileName);
+
+                return ExitCodeCommand.EXIT;
+
+            } catch (Exception e) {
+                println("Ошибка при сохранении коллекции: " + e.getMessage());
+                return ExitCodeCommand.ERROR;
+            }
+        }
+
+        // === Логика клиента ===
+        println("Клиент завершает работу...");
+
+
+
         return ExitCodeCommand.EXIT;
     }
 

@@ -1,5 +1,6 @@
 package server.utility;
 
+import common.commands.AbstractCommand;
 import common.commands.CommandRequest;
 import common.interaction.Response;
 import common.utility.Serializer;
@@ -41,9 +42,6 @@ public class RequestHandler {
             if ("load_file".equals(cmd)) {
                 response = handleLoadFile(request, console);
             }
-            else if ("exit".equals(cmd)) {
-                response = handleExit(console, fileManager);
-            }
             else {
                 response = processCommand(request, console);
             }
@@ -56,6 +54,8 @@ public class RequestHandler {
             e.printStackTrace();
         }
     }
+
+
 
     // ==================== Вспомогательные методы ====================
 
@@ -77,20 +77,6 @@ public class RequestHandler {
         }
     }
 
-    private static Response handleExit(Console console, FileManager fileManager) {
-        try {
-            fileManager.writeCollection();
-            byte[] fileData = fileManager.getCollectionAsBytes();
-
-            Response response = new Response(ExitCodeCommand.OK, "Сервер завершил работу. Коллекция сохранена.");
-            response.setFileData(fileData);
-            response.setFileName(console.getLoadFileName());
-
-            return response;
-        } catch (Exception e) {
-            return new Response(ExitCodeCommand.ERROR, "Ошибка при exit: " + e.getMessage());
-        }
-    }
 
     private static Response processCommand(CommandRequest request, Console console) {
         try {
@@ -107,6 +93,7 @@ public class RequestHandler {
 
             // ←←← СОРТИРОВКА ПОСЛЕ КОМАНДЫ ←←←
             console.sortCollectionIfNeeded(commandName);
+
 
             String message = (result == ExitCodeCommand.OK)
                     ? "Команда выполнена успешно."

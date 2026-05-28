@@ -242,18 +242,8 @@ public class Console {
 
     // Добавь этот метод в класс Console
     public void sortCollectionIfNeeded(String commandName) {
-        switch (commandName.toLowerCase()) {
-            case "add":
-            case "update":
-            case "remove_by_id":
-            case "remove_greater":
-            case "clear":
-            case "reorder":
-            case "sort":
-                collectionManager.sortByName();   // нужно добавить в CollectionManager
-                System.out.println("Коллекция отсортирована по имени после команды: " + commandName);
-                break;
-        }
+        collectionManager.sortByName();   // нужно добавить в CollectionManager
+        System.out.println("Коллекция отсортирована по имени после команды: " + commandName);
     }
 
     public ExitCodeCommand launchCommand(String mnemonics, String argument) {

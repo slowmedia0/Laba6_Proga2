@@ -10,6 +10,7 @@ public class AddCommand extends AbstractCommand {
     private String argument;
     private Vehicle vehicle;
 
+    //Для метода createCommand из UserHandler
     public AddCommand(String argument) {
         super("add","добавить новый элемент в коллекцию");
         this.argument=argument;
@@ -18,6 +19,11 @@ public class AddCommand extends AbstractCommand {
         }catch (Exception e){
             System.out.println(e.getMessage());
         }
+    }
+
+    public AddCommand(CollectionManager collectionManager) {
+        super("add","добавить новый элемент в коллекцию");
+        this.collectionManager = collectionManager;
     }
 
     public void setArgument(String argument) {

@@ -20,7 +20,7 @@ public class UDPClient {
     private final SocketAddress serverAddress;
 
     private static final int BUFFER_SIZE = 65536;
-    private static final int TIMEOUT_MS = 8000;
+    private static final int TIMEOUT_MS = 5000;   // можно уменьшить
 
     public UDPClient(String host, int port) throws IOException {
         this.serverAddress = new InetSocketAddress(host, port);
@@ -35,43 +35,43 @@ public class UDPClient {
     }
 
     public Response sendRequest(CommandRequest command) {
+        if (command == null) {
+            return new Response(ExitCodeCommand.ERROR, "Не удалось создать запрос");
+        }
+
         try {
-            if (command == null) {
-                return new Response(ExitCodeCommand.ERROR, "Не удалось создать запрос");
-            }
-
-            // Сериализация и отправка
+            // === ОТПРАВКА ===
             byte[] data = Serializer.serialize(command);
-            ByteBuffer buffer = ByteBuffer.wrap(data);
-            channel.write(buffer);
+            ByteBuffer sendBuffer = ByteBuffer.wrap(data);
 
-            System.out.println("→ Отправлена команда: " + command.getNameOfCommand());
+            int bytesSent = channel.send(sendBuffer, serverAddress);
+            System.out.println("→ Отправлена команда: " + command.getNameOfCommand() + " (" + bytesSent + " байт)");
 
-            // Ожидание ответа
+            // === ОЖИДАНИЕ ОТВЕТА ===
             if (selector.select(TIMEOUT_MS) == 0) {
                 return new Response(ExitCodeCommand.ERROR,
-                        "Сервер не отвечает (таймаут " + TIMEOUT_MS + "мс)");
+                        "Сервер не отвечает (таймаут " + TIMEOUT_MS + " мс)");
             }
 
-            // Получение ответа
-            ByteBuffer responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-            SocketAddress sender = channel.receive(responseBuffer);
+            // === ПОЛУЧЕНИЕ ОТВЕТА ===
+            ByteBuffer receiveBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+            SocketAddress sender = channel.receive(receiveBuffer);
 
             if (sender == null) {
                 return new Response(ExitCodeCommand.ERROR, "Не удалось получить ответ от сервера");
             }
 
-            responseBuffer.flip();
-            byte[] responseBytes = new byte[responseBuffer.remaining()];
-            responseBuffer.get(responseBytes);
+            receiveBuffer.flip();
+            byte[] responseData = new byte[receiveBuffer.remaining()];
+            receiveBuffer.get(responseData);
 
-            Response response = Serializer.deserialize(responseBytes);
-
+            Response response = Serializer.deserialize(responseData);
             return response;
 
         } catch (Exception e) {
             System.err.println("❌ Ошибка связи с сервером: " + e.getMessage());
-            return new Response(ExitCodeCommand.ERROR, "Ошибка соединения: " + e.getMessage());
+            e.printStackTrace();           // ← Очень полезно для отладки
+            return new Response(ExitCodeCommand.ERROR, "Ошибка соединения: " + e.getClass().getSimpleName());
         }
     }
 
@@ -79,9 +79,9 @@ public class UDPClient {
         try {
             selector.close();
             channel.close();
-            System.out.println("Соединение закрыто.");
+            System.out.println("Клиент: соединение закрыто.");
         } catch (IOException e) {
-            System.err.println("Ошибка при закрытии соединения: " + e.getMessage());
+            System.err.println("Ошибка при закрытии клиента: " + e.getMessage());
         }
     }
 }

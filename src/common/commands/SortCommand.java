@@ -7,9 +7,16 @@ import server.utility.CollectionManager;
 public class SortCommand extends AbstractCommand{
     private CollectionManager collectionManager;
     private String argument;
+
+    //Для метода createCommand из UserHandler
     public SortCommand(String argument) {
         super("sort","отсортировать коллекцию в естественном порядке");
         this.argument=argument;
+    }
+
+    public SortCommand(CollectionManager collectionManager) {
+        super("sort","отсортировать коллекцию в естественном порядке");
+        this.collectionManager = collectionManager;
     }
 
     public SortCommand() {
@@ -34,27 +41,28 @@ public class SortCommand extends AbstractCommand{
         if (!valid.equals(ExitCodeCommand.OK)) {
             return valid;
         }
-        collectionManager.sortCollection();
-        return ExitCodeCommand.OK;
+        try {
+            if (collectionManager.getCollection().size()==0){
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
+            collectionManager.sortCollection();
+            return ExitCodeCommand.OK;
+        }
+        catch (WrongAmountOfElementsException e){
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.OK;
+        }
     }
 
     public ExitCodeCommand validate(){
-        boolean isEmptyCollection = false;
         try{
             if (!argument.isEmpty()){
                 throw new WrongAmountOfElementsException(getNameOfCommand() + " не принимает аргументов!");
             }
-            if (collectionManager.getCollection().size()==0){
-                isEmptyCollection = true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
-            }
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
-            if (!isEmptyCollection){
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
     }
 }

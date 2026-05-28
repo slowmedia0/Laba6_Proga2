@@ -302,4 +302,8 @@ public class FileManager {
             System.err.println("Ошибка загрузки коллекции из байтов: " + e.getMessage());
         }
     }
+
+    public File getLoadFile() {
+        return loadFile;
+    }
 }

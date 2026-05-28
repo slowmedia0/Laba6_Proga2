@@ -11,6 +11,7 @@ public class RemoveByIdCommand extends AbstractCommand{
     private CollectionManager collectionManager;
     private String argument;
 
+    //Для метода createCommand из UserHandler
     public RemoveByIdCommand(String argument) {
         super("remove_by_id id","удалить элемент из коллекции по его id");
         this.argument=argument;
@@ -21,6 +22,11 @@ public class RemoveByIdCommand extends AbstractCommand{
     }
 
     public void setCollectionManager(CollectionManager collectionManager) {
+        this.collectionManager = collectionManager;
+    }
+
+    public RemoveByIdCommand(CollectionManager collectionManager) {
+        super("remove_by_id id","удалить элемент из коллекции по его id");
         this.collectionManager = collectionManager;
     }
 
@@ -39,9 +45,23 @@ public class RemoveByIdCommand extends AbstractCommand{
             return valid;
         }
         try {
+            if (collectionManager.getCollection().size()==0){
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
             Integer id = Integer.valueOf(argument);
+            if (Validator.validateIdVehicle(id, collectionManager.getCollection()) == false) {
+                throw new ValidateDataException("Введенное поле id не валидно!");
+            }
             collectionManager.removeById(id);
             return ExitCodeCommand.OK;
+        }
+        catch (WrongAmountOfElementsException e){
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.OK;
+        }
+        catch (ValidateDataException e) {
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.ERROR;
         }
         catch (IndexOutOfBoundsException e){
             System.out.println("Коллекция пуста!");
@@ -53,7 +73,6 @@ public class RemoveByIdCommand extends AbstractCommand{
         }
     }
     public ExitCodeCommand validate(){
-        boolean isEmptyCollection = false;
         try {
             if (argument.isEmpty()) {
                 throw new NullPointerException("id не может быть null!");
@@ -61,12 +80,8 @@ public class RemoveByIdCommand extends AbstractCommand{
             if (argument.split("\\s+").length>1){
                 throw new WrongAmountOfElementsException("Должен быть только один аргумент - поле 'id'!");
             }
-            if (collectionManager.getCollection().size()==0){
-                isEmptyCollection=true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
-            }
             Integer id = Integer.valueOf(argument);
-            if (Validator.validateIdVehicle(id, collectionManager.getCollection()) == false) {
+            if (Validator.validateIdVehicle2(id) == false) {
                 throw new ValidateDataException("Введенное поле id не валидно!");
             }
             return ExitCodeCommand.OK;
@@ -77,10 +92,7 @@ public class RemoveByIdCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
-            if (!isEmptyCollection){
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
         catch (NumberFormatException e) {
             System.out.println(e.getMessage() + " : Некорректный ввод поля id!");

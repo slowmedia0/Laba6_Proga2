@@ -1,10 +1,8 @@
 package server;
 
+import client.utility.FieldReaderClient;
 import common.commands.*;
-import server.utility.CollectionManager;
-import server.utility.CommandManger;
-import server.utility.Console;
-import server.utility.FileManager;
+import server.utility.*;
 
 import java.io.File;
 import java.util.Scanner;
@@ -19,23 +17,25 @@ public class App {
 
             CommandManger commandManger = new CommandManger(
                     new HelpCommand(),
-                    new InfoCommand(),
-                    new ShowCommand(),
-                    new AddCommand(),
-                    new UpdateIdCommand(),
-                    new RemoveByIdCommand(),
-                    new ClearCommand(),
+                    new InfoCommand(collectionManager),
+                    new ShowCommand(collectionManager),
+                    new AddCommand(collectionManager),
+                    new UpdateIdCommand(collectionManager),
+                    new RemoveByIdCommand(collectionManager),
+                    new ClearCommand(collectionManager),
                     new ExecuteScriptCommand(),
                     new ExitCommand(),
-                    new RemoveGreaterCommand(),
-                    new ReorderCommand(),
-                    new SortCommand(),
-                    new SumOfEnginePowerCommand(),
-                    new PrintFieldAscendingNumberOfWheelsCommand(),
-                    new PrintFieldDescendingNumberOfWheelsCommand()
+                    new RemoveGreaterCommand(collectionManager),
+                    new ReorderCommand(collectionManager),
+                    new SortCommand(collectionManager),
+                    new SumOfEnginePowerCommand(collectionManager),
+                    new PrintFieldAscendingNumberOfWheelsCommand(collectionManager),
+                    new PrintFieldDescendingNumberOfWheelsCommand(collectionManager)
             );
-
             Console console = new Console(commandManger, fileManager, collectionManager);
+
+            commandManger.getExecuteScriptCommand().setConsole(console);
+            FieldReaderServer.setConsole(console);
 
             UDPServer server = new UDPServer(console, fileManager);
             System.out.println("=== Сервер успешно запущен ===");

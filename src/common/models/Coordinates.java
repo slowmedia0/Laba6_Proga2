@@ -1,9 +1,11 @@
 package common.models;
 
+import java.io.Serializable;
+
 /**
  * Класс координат транспортного средства.
  */
-public class Coordinates {
+public class Coordinates implements Serializable {
     private Long x;
     private Double y;
 

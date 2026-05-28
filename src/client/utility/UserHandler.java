@@ -51,11 +51,9 @@ public class UserHandler {
             nameOfFile= FieldReaderClient.askFile();
         }
         this.loadFileName=nameOfFile;
-
         try{
             File file = new File(nameOfFile);
             this.loadFileData = Files.readAllBytes(file.toPath());
-            System.out.println("Загрузочный файл прочитан: " + nameOfFile + " (" + loadFileData.length + " байт)");
         } catch (IOException e) {
             System.err.println("Ошибка чтения загрузочного файла: " + e.getMessage());
             this.loadFileData = new byte[0]; // пустой массив в случае ошибки

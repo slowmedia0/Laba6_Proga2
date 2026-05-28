@@ -1,8 +1,10 @@
 package common.interaction;
 
 import common.ExitCodeCommand;
+import common.models.Vehicle;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Класс ответа от сервера клиенту
@@ -67,4 +69,5 @@ public class Response implements Serializable {
     public String toString() {
         return "Response{exitCode=" + exitCode + ", message='" + message + "'}";
     }
+
 }

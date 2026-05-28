@@ -8,6 +8,8 @@ import java.util.regex.Pattern;
 public class ClearCommand extends AbstractCommand {
     private CollectionManager collectionManager;
     private String argument;
+
+    //Для метода createCommand из UserHandler
     public ClearCommand(String argument) {
         super("clear","очистить коллекцию");
         this.argument=argument;
@@ -17,6 +19,10 @@ public class ClearCommand extends AbstractCommand {
         super("clear","очистить коллекцию");
     }
 
+    public ClearCommand(CollectionManager collectionManager) {
+        super("clear","очистить коллекцию");
+        this.collectionManager = collectionManager;
+    }
     @Override
     public String getArgument() {
         return argument;

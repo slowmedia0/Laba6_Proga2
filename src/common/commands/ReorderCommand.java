@@ -8,10 +8,18 @@ public class ReorderCommand extends AbstractCommand{
     private CollectionManager collectionManager;
     private String argument;
 
+
+    //Для метода createCommand из UserHandler
     public ReorderCommand(String argument) {
         super("reorder","отсортировать коллекцию в порядке, обратном нынешнему");
         this.argument = argument;
     }
+
+    public ReorderCommand(CollectionManager collectionManager) {
+        super("reorder","отсортировать коллекцию в порядке, обратном нынешнему");
+        this.collectionManager = collectionManager;
+    }
+
 
     public ReorderCommand() {
         super("reorder","отсортировать коллекцию в порядке, обратном нынешнему");
@@ -35,27 +43,28 @@ public class ReorderCommand extends AbstractCommand{
         if (!valid.equals(ExitCodeCommand.OK)){
             return valid;
         }
-        collectionManager.reorderCollection();
-        return ExitCodeCommand.OK;
+        try {
+            if (collectionManager.getCollection().size() == 0) {
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
+            collectionManager.reorderCollection();
+            return ExitCodeCommand.OK;
+        }
+        catch (WrongAmountOfElementsException e){
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.OK;
+        }
     }
 
     public ExitCodeCommand validate(){
-        boolean isEmptyCollection = false;
         try{
             if (!argument.isEmpty()){
                 throw new WrongAmountOfElementsException(getNameOfCommand() + " не принимает аргументов!");
             }
-            if (collectionManager.getCollection().size()==0){
-                isEmptyCollection=true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
-            }
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
-            if (!isEmptyCollection){
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
     }
 }

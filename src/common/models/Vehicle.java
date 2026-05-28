@@ -1,11 +1,12 @@
 package common.models;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 
 /**
  * Класс транспортного средства.
  */
-public class Vehicle implements Comparable<Vehicle> {
+public class Vehicle implements Comparable<Vehicle>, Serializable {
     private Integer id;
     private String name;
     private Coordinates coordinates;

@@ -9,6 +9,7 @@ public class SumOfEnginePowerCommand extends AbstractCommand{
     private CollectionManager collectionManager;
     private String argument;
 
+    //Для метода createCommand из UserHandler
     public SumOfEnginePowerCommand(String argument) {
         super("sum_of_engine_power","вывести сумму значений поля enginePower для всех элементов коллекции");
         this.argument=argument;
@@ -19,6 +20,11 @@ public class SumOfEnginePowerCommand extends AbstractCommand{
     }
 
     public void setCollectionManager(CollectionManager collectionManager) {
+        this.collectionManager = collectionManager;
+    }
+
+    public SumOfEnginePowerCommand(CollectionManager collectionManager) {
+        super("sum_of_engine_power","вывести сумму значений поля enginePower для всех элементов коллекции");
         this.collectionManager = collectionManager;
     }
 
@@ -37,7 +43,14 @@ public class SumOfEnginePowerCommand extends AbstractCommand{
             return valid;
         }
         try{
+            if (collectionManager.getCollection().size()==0){
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
             collectionManager.sumEnginePower();
+            return ExitCodeCommand.OK;
+        }
+        catch (WrongAmountOfElementsException e){
+            System.out.println(e.getMessage());
             return ExitCodeCommand.OK;
         }
         catch (IndexOutOfBoundsException e){
@@ -47,23 +60,15 @@ public class SumOfEnginePowerCommand extends AbstractCommand{
     }
 
     public ExitCodeCommand validate(){
-        boolean isEmptyCollection = false;
         try{
             if (!argument.isEmpty()){
                 throw new WrongAmountOfElementsException(getNameOfCommand() + " не принимает аргументов!");
-            }
-            if (collectionManager.getCollection().size()==0){
-                isEmptyCollection=true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
             }
             return ExitCodeCommand.OK;
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
-            if (!isEmptyCollection){
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
     }
 }

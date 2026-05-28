@@ -101,6 +101,18 @@ public class Validator {
         }
     }
 
+    public static boolean validateIdVehicle2(Integer id) throws ValidateDataException {
+        try {
+            if (id==null){
+                throw new NullPointerException("Поле 'id' не может быть null!");
+            }
+            return true;
+        }
+        catch (NullPointerException | IllegalStateException e){
+            throw new ValidateDataException("Поле 'id' не валидно!",e);
+        }
+    }
+
     /**
      * Проверяет корректность поля id.
      *

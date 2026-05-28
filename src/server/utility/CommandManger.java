@@ -213,5 +213,7 @@ public class CommandManger {
         return printFieldDescendingNumberOfWheelsCommand.execute();}
 
 
-
+    public ExitCommand getExitCommand() {
+        return exitCommand;
+    }
 }

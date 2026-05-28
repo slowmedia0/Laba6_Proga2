@@ -9,9 +9,15 @@ public class InfoCommand extends AbstractCommand{
     private String argument;
     private CollectionManager collectionManager;
 
+    //Для метода createCommand из UserHandler
     public InfoCommand(String argument) {
         super("info","вывести в стандартный поток вывода информацию о коллекции (тип, дата инициализации, количество элементов и т.д.)");
         this.argument=argument;
+    }
+
+    public InfoCommand(CollectionManager collectionManager) {
+        super("info","вывести в стандартный поток вывода информацию о коллекции (тип, дата инициализации, количество элементов и т.д.)");
+        this.collectionManager = collectionManager;
     }
 
     public InfoCommand() {

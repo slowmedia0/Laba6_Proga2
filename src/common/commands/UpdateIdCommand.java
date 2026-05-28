@@ -14,7 +14,7 @@ public class UpdateIdCommand extends AbstractCommand{
     private Vehicle vehicle;
     private CollectionManager collectionManager;
 
-
+    //Для метода createCommand из UserHandler
     public UpdateIdCommand(String argument){
         super("update id","обновить значение элемента коллекции, id которого равен заданному");
         this.argument=argument;
@@ -23,6 +23,11 @@ public class UpdateIdCommand extends AbstractCommand{
         }catch (Exception e){
             System.out.println(e.getMessage());
         }
+    }
+
+    public UpdateIdCommand(CollectionManager collectionManager){
+        super("update id","обновить значение элемента коллекции, id которого равен заданному");
+        this.collectionManager=collectionManager;
     }
 
     public void setCollectionManager(CollectionManager collectionManager) {
@@ -56,9 +61,30 @@ public class UpdateIdCommand extends AbstractCommand{
             return valid;
         }
         try {
+            if (collectionManager.getCollection().size()==0){
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
             Integer id = Integer.valueOf(argument);
+            if (Validator.validateIdVehicle(id, collectionManager.getCollection()) == false) {
+                throw new ValidateDataException("Некорректный ввод поля id!");
+            }
+            if (collectionManager.existId(id)==false){
+                throw new NotExistException("В коллекции нет объектов с таким же id!");
+            }
             collectionManager.updateElementById(id, vehicle);
             return ExitCodeCommand.OK;
+        }
+        catch (WrongAmountOfElementsException e){
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.OK;
+        }
+        catch (ValidateDataException e) {
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.ERROR;
+        }
+        catch (NotExistException e){
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.ERROR;
         }
         catch (IndexOutOfBoundsException e){
             System.out.println("Коллекция пуста!");
@@ -70,8 +96,7 @@ public class UpdateIdCommand extends AbstractCommand{
         }
     }
     public ExitCodeCommand validate(){
-        boolean isEmptyCollection = false;
-        try {
+       try {
             if (argument.isEmpty()) {
                 throw new NullPointerException("id не может быть null!");
             }
@@ -79,15 +104,8 @@ public class UpdateIdCommand extends AbstractCommand{
                 throw new WrongAmountOfElementsException("Должен быть только один аргумент - поле 'id'!");
             }
             Integer id = Integer.valueOf(argument);
-            if (Validator.validateIdVehicle(id, collectionManager.getCollection()) == false) {
+            if (Validator.validateIdVehicle2(id) == false) {
                 throw new ValidateDataException("Некорректный ввод поля id!");
-            }
-            if (collectionManager.getCollection().size()==0){
-                isEmptyCollection = true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
-            }
-            if (collectionManager.existId(id)==false){
-                throw new NotExistException("В коллекции нет объектов с таким же id!");
             }
             return ExitCodeCommand.OK;
         } catch (NullPointerException e) {
@@ -96,19 +114,12 @@ public class UpdateIdCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
-            if (!isEmptyCollection){
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
         catch (NumberFormatException e) {
             System.out.println(e.getMessage());
             return ExitCodeCommand.ERROR;
         } catch (ValidateDataException e) {
-            System.out.println(e.getMessage());
-            return ExitCodeCommand.ERROR;
-        }
-        catch (NotExistException e){
             System.out.println(e.getMessage());
             return ExitCodeCommand.ERROR;
         }

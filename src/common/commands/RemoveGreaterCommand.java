@@ -11,6 +11,7 @@ public class RemoveGreaterCommand extends AbstractCommand{
     private String argument;
     private Vehicle vehicle;
 
+    //Для метода createCommand из UserHandler
     public RemoveGreaterCommand(String argument) {
         super("remove_greater","удалить из коллекции все элементы, превышающие заданный");
         this.argument=argument;
@@ -19,6 +20,11 @@ public class RemoveGreaterCommand extends AbstractCommand{
         }catch (Exception e){
             System.out.println(e.getMessage());
         }
+    }
+
+    public RemoveGreaterCommand(CollectionManager collectionManager) {
+        super("remove_greater","удалить из коллекции все элементы, превышающие заданный");
+        this.collectionManager = collectionManager;
     }
 
     public RemoveGreaterCommand() {
@@ -52,7 +58,14 @@ public class RemoveGreaterCommand extends AbstractCommand{
             return valid;
         }
         try{
+            if (collectionManager.getCollection().size()==0){
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
             collectionManager.removeGreater(vehicle);
+            return ExitCodeCommand.OK;
+        }
+        catch (WrongAmountOfElementsException e){
+            System.out.println(e.getMessage());
             return ExitCodeCommand.OK;
         }
         catch (IndexOutOfBoundsException e){
@@ -66,23 +79,15 @@ public class RemoveGreaterCommand extends AbstractCommand{
     }
 
     public ExitCodeCommand validate(){
-        boolean isEmptyCollection = false;
         try{
             if (!argument.isEmpty()){
                 throw new WrongAmountOfElementsException("Преждевременный ввод элемента!");
-            }
-            if (collectionManager.getCollection().size()==0){
-                isEmptyCollection=true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
             }
             return ExitCodeCommand.OK;
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
-            if (!isEmptyCollection){
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
     }
 }

@@ -8,6 +8,7 @@ public class ShowCommand extends AbstractCommand {
     private CollectionManager collectionManager;
     private String argument;
 
+    //Для метода createCommand из UserHandler
     public ShowCommand(String argument) {
         super("show", "вывести в стандартный поток вывода все элементы коллекции в строковом представлении");
         this.argument = argument;
@@ -15,6 +16,11 @@ public class ShowCommand extends AbstractCommand {
 
     public ShowCommand() {
         super("show", "вывести в стандартный поток вывода все элементы коллекции в строковом представлении");
+    }
+
+    public ShowCommand(CollectionManager collectionManager) {
+        super("show","вывести в стандартный поток вывода все элементы коллекции в строковом представлении");
+        this.collectionManager = collectionManager;
     }
 
     public void setCollectionManager(CollectionManager collectionManager) {
@@ -36,31 +42,30 @@ public class ShowCommand extends AbstractCommand {
             return valid;
         }
         try {
+            if (collectionManager.getCollection().size() == 0) {
+                throw new WrongAmountOfElementsException("Коллекция пуста!");
+            }
             collectionManager.showElementsOfCollection();
             return ExitCodeCommand.OK;
         } catch (IndexOutOfBoundsException e) {
             System.out.println("Коллекция пуста!");
             return ExitCodeCommand.OK;
         }
+        catch (WrongAmountOfElementsException e) {
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.OK;
+        }
     }
 
     public ExitCodeCommand validate() {
-        boolean isEmptyCollection = false;
         try {
             if (!argument.isEmpty()) {
                 throw new WrongAmountOfElementsException(getNameOfCommand() + " не принимает аргументов!");
             }
-            if (collectionManager.getCollection().size() == 0) {
-                isEmptyCollection = true;
-                throw new WrongAmountOfElementsException("Коллекция пуста!");
-            }
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e) {
             System.out.println(e.getMessage());
-            if (!isEmptyCollection) {
-                return ExitCodeCommand.ERROR;
-            }
-            return ExitCodeCommand.OK;
+            return ExitCodeCommand.ERROR;
         }
     }
 }

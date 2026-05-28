@@ -7,6 +7,8 @@ import java.util.List;
 public class HelpCommand extends AbstractCommand{
     private List<Command> commands;
     private String argument;
+
+    //Для метода createCommand из UserHandler
     public HelpCommand(String argument) {
         super("help","вывести справку по доступным командам");
         this.argument=argument;
