@@ -1,6 +1,5 @@
 package server.utility;
 
-import common.ExitCodeCommand;
 import common.interaction.Response;
 import common.utility.Serializer;
 
@@ -11,28 +10,30 @@ import java.nio.channels.DatagramChannel;
 
 public class ResponseSender {
 
-    private static final int BUFFER_SIZE = 65536;
+    private static final int BUFFER_SIZE = 524288; // 512 KB
 
-    /**
-     * Отправка ответа клиенту
-     */
     public static void sendResponse(DatagramChannel channel, SocketAddress clientAddress, Response response) {
+        if (clientAddress == null || response == null) {
+            System.err.println("❌ ResponseSender: null address or response");
+            return;
+        }
+
         try {
-            if (response == null) {
-                response = new Response(ExitCodeCommand.ERROR, "Внутренняя ошибка сервера");
-            }
-
             byte[] data = Serializer.serialize(response);
+
+            System.out.println("📦 Сериализовано " + data.length + " байт для отправки");
+
             ByteBuffer buffer = ByteBuffer.wrap(data);
+            int sent = channel.send(buffer, clientAddress);
 
-            channel.send(buffer, clientAddress);
-
-            System.out.println("→ Ответ отправлен клиенту " + clientAddress);
+            System.out.println("✅ ОТПРАВЛЕНО клиенту! (" + sent + " байт) | " +
+                    response.getMessage().substring(0, Math.min(80, response.getMessage().length())));
 
         } catch (IOException e) {
-            System.err.println("Ошибка отправки ответа клиенту: " + e.getMessage());
+            System.err.println("❌ Ошибка отправки UDP: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("Критическая ошибка сериализации ответа: " + e.getMessage());
+            System.err.println("❌ Ошибка сериализации: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

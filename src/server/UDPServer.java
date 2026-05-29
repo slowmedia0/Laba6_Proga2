@@ -13,7 +13,7 @@ import java.util.Iterator;
 public class UDPServer {
 
     private static final int PORT = 2222;
-    private static final int BUFFER_SIZE = 65536;
+    private static final int SELECT_TIMEOUT_MS = 500; // Добавили таймаут
 
     private final DatagramChannel channel;
     private final Selector selector;
@@ -38,20 +38,26 @@ public class UDPServer {
     public void start() {
         try {
             while (true) {
-                if (selector.select() == 0) continue;
+                // Добавили таймаут, чтобы сервер не "зависал" полностью
+                if (selector.select(SELECT_TIMEOUT_MS) == 0) {
+                    continue;
+                }
 
                 Iterator<SelectionKey> it = selector.selectedKeys().iterator();
 
                 while (it.hasNext()) {
                     SelectionKey key = it.next();
+
                     if (key.isReadable()) {
                         handleRequest();
                     }
-                    it.remove();
+
+                    it.remove(); // ОБЯЗАТЕЛЬНО удаляем ключ
                 }
             }
         } catch (IOException e) {
-            System.err.println("Ошибка работы сервера: " + e.getMessage());
+            System.err.println("Критическая ошибка сервера: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             close();
         }
@@ -63,11 +69,11 @@ public class UDPServer {
 
     private void close() {
         try {
-            selector.close();
-            channel.close();
+            if (selector != null) selector.close();
+            if (channel != null) channel.close();
             System.out.println("Сервер завершил работу.");
         } catch (IOException e) {
-            System.err.println("Ошибка закрытия сервера: " + e.getMessage());
+            System.err.println("Ошибка при закрытии сервера: " + e.getMessage());
         }
     }
 }

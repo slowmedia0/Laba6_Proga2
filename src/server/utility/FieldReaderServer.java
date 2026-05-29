@@ -3,10 +3,8 @@ package server.utility;
 import client.utility.Validator;
 import common.ExitCodeCommand;
 import common.exceptions.*;
-import common.exceptions.ValueOutOfBoundsException;
-import common.exceptions.WrongAmountOfElementsException;
 import common.models.*;
-import server.utility.CollectionManager;
+
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -17,462 +15,324 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 /**
- * Класс для чтения и проверки полей объектов.
+ * Класс для чтения и проверки полей объектов на сервере.
+ * Весь вывод теперь идёт через ResponseBuilder.
  */
 public class FieldReaderServer {
-    /** Сканер пользовательского ввода. */
+
     private static final Scanner userScanner = new Scanner(System.in);
-    /** Ссылка на объект консоли. */
     private static Console console;
 
-    /**
-     * Устанавливает объект консоли.
-     *
-     * @param console объект консоли
-     */
     public static void setConsole(Console console) {
         FieldReaderServer.console = console;
     }
 
+    // ==================== Вспомогательные методы вывода ====================
+
+    private static void printIfNotScript(String message) {
+        if (!console.isFlagScript() && !console.isFlagReadCollection()) {
+            ResponseBuilder.append(message);
+        }
+    }
+
+    private static void printErrorIfNotScript(String message) {
+        if (!console.isFlagScript() && !console.isFlagReadCollection()) {
+            ResponseBuilder.appendError(message);
+        }
+    }
+
+    // ==================== Основные методы ====================
 
     public static Integer readFieldId(String argument, CollectionManager collectionManager) throws FieldReadException {
         try {
             String data = argument;
             Integer id;
-            if (data.trim().split("\\s+").length>1){
+
+            if (data.trim().split("\\s+").length > 1) {
                 throw new WrongAmountOfElementsException("Для поля 'id' указано более одного аргумента!");
             }
+
             if (data.isEmpty()) {
                 id = null;
             } else if (data.trim().isEmpty()) {
-                throw new NumberFormatException("Для поля 'id' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+                throw new NumberFormatException("Для поля 'id' была введена последовательность, состоящая из 'пустых символов'!");
             } else if (data.equals("NULL")) {
                 id = collectionManager.generateId(collectionManager.getArrayId());
             } else {
-                BigDecimal a;
-                try {
-                    data=data.replace(",",".").trim();
-                    data=data.replaceAll("\\.0+$","");
-                    a = new BigDecimal(data);
-                }
-                catch (NumberFormatException e){
-                    throw new NumberFormatException("");
-                }
+                BigDecimal a = new BigDecimal(data.replace(",", ".").trim().replaceAll("\\.0+$", ""));
                 if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
                     throw new NumberFormatException("Поле 'id' не может быть дробным числом!");
                 }
                 BigInteger b = new BigInteger(data);
-                BigInteger startOfBounds = BigInteger.valueOf(1);
-                BigInteger endOfBounds = BigInteger.valueOf(Integer.MAX_VALUE);
-                if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
-                    throw new ValueOutOfBoundsException("Поле 'id' должно находиться в диапазоне: " + startOfBounds + "<=id<=" + endOfBounds);
+                if (b.compareTo(BigInteger.ONE) < 0 || b.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+                    throw new ValueOutOfBoundsException("Поле 'id' должно находиться в диапазоне: 1 <= id <= " + Integer.MAX_VALUE);
                 }
                 id = Integer.valueOf(data);
             }
+
             Validator.validateIdVehicle(id);
             collectionManager.getArrayId().add(id);
             return id;
-        }
-        catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e){
-            throw  new FieldReadException("Не удалось считать поле 'id'! Поле 'id' должно быть целым числом!",e);
-        }
-        catch (ValueOutOfBoundsException e){
-            throw new FieldReadException("Не удалось считать поле 'id'!",e);
+
+        } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException | ValueOutOfBoundsException e) {
+            printErrorIfNotScript("Не удалось считать поле 'id'!");
+            throw new FieldReadException("Не удалось считать поле 'id'!", e);
         }
     }
 
-
     public static Vehicle askVehicleObject() throws ValidateDataException, NotExistException, FieldReadException {
         try {
-            if (!console.isFlagScript()) {
-                System.out.println("Для того чтобы заполнить объект типа Vehicle, выполните следующее:");
-            }
-            return new Vehicle(FieldReaderServer.readFieldName(null), FieldReaderServer.askCoordinates(null, null), FieldReaderServer.readFieldEnginePower(null), FieldReaderServer.readFieldNumberOfWheels(null), FieldReaderServer.readFieldType(null), FieldReaderServer.readFieldFuelType(null));
+            printIfNotScript("Для того чтобы заполнить объект типа Vehicle, выполните следующее:");
+            return new Vehicle(
+                    FieldReaderServer.readFieldName(null),
+                    FieldReaderServer.askCoordinates(null, null),
+                    FieldReaderServer.readFieldEnginePower(null),
+                    FieldReaderServer.readFieldNumberOfWheels(null),
+                    FieldReaderServer.readFieldType(null),
+                    FieldReaderServer.readFieldFuelType(null)
+            );
         } catch (FieldReadException e) {
+            printErrorIfNotScript("Не удалось инициализировать поля объекта типа Vehicle!");
             throw new FieldReadException("Не удалось инициализировать поля объекта типа Vehicle!");
         }
     }
 
-
     public static String readFieldName(String argument) throws ValidateDataException, FieldReadException {
         try {
-                String name;
-                if (console.isFlagReadCollection()){
-                    name = argument;
-                    if (name.equals("NULL")) {
-                        throw new NotExistException("Отсутствует тэг 'name'! Поле 'name' не инициализировано!");
-                    }
+            String name;
+            if (console.isFlagReadCollection()) {
+                name = argument;
+                if (name.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'name'! Поле 'name' не инициализировано!");
                 }
-                else {
-                    name = console.getFields().get(0);
-                }
-                int maxLenOfName = 1500;
-                if (name.length()>maxLenOfName){
-                    throw new ValueOutOfBoundsException("Максимальная длина поля 'name' = " + maxLenOfName);
-                }
-                Validator.validateNameVehicle(name);
-                return name;
+            } else {
+                name = console.getFields().get(0);
             }
-            catch (ValueOutOfBoundsException e){
-                throw new FieldReadException("Не удалось считать поле 'name'!",e);
-            }
-            catch (NotExistException | ValidateDataException e){
-                throw new FieldReadException("Не удалось считать поле 'name'! Поле 'name' должно представлять собой название транспортного средства!",e);
-            }
-    }
 
+            int maxLenOfName = 1500;
+            if (name.length() > maxLenOfName) {
+                throw new ValueOutOfBoundsException("Максимальная длина поля 'name' = " + maxLenOfName);
+            }
+
+            Validator.validateNameVehicle(name);
+            return name;
+
+        } catch (ValueOutOfBoundsException | NotExistException | ValidateDataException e) {
+            printErrorIfNotScript("Не удалось считать поле 'name'!");
+            throw new FieldReadException("Не удалось считать поле 'name'!", e);
+        }
+    }
 
     public static Coordinates askCoordinates(String argX, String argY) throws ValidateDataException, FieldReadException {
         try {
-                Long x;
-                Double y;
-                Coordinates coordinates = null;
-                if (console.isFlagReadCollection()){
-                    x = readFieldX(argX);
-                    y = readFieldY(argY);
-                    coordinates = new Coordinates(x, y);
-                }
-                else {
-                    x = readFieldX("");
-                    y = readFieldY("");
-                    coordinates = new Coordinates(x,y);
-                }
-                Validator.validateCoordinatesVehicle(coordinates);
-                return coordinates;
-            }
-            catch (FieldReadException e){
-                throw new FieldReadException("Не удалось считать поле 'coordinates'!",e);
-            }
+            Long x = readFieldX(argX);
+            Double y = readFieldY(argY);
+            Coordinates coordinates = new Coordinates(x, y);
+            Validator.validateCoordinatesVehicle(coordinates);
+            return coordinates;
+        } catch (FieldReadException e) {
+            printErrorIfNotScript("Не удалось считать поле 'coordinates'!");
+            throw new FieldReadException("Не удалось считать поле 'coordinates'!", e);
+        }
     }
-
 
     public static Long readFieldX(String argument) throws FieldReadException {
-      try {
-                String data;
-                Long x;
-                if (console.isFlagReadCollection()) {
-                    data = argument;
-                    if (data.equals("NULL")) {
-                        throw new NotExistException("Отсутствует тэг 'x'! Поле 'x' не инициализировано!");
-                    }
-                } else {
-                    data = console.getFields().get(1);
+        try {
+            String data;
+            Long x;
+            if (console.isFlagReadCollection()) {
+                data = argument;
+                if (data.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'x'! Поле 'x' не инициализировано!");
                 }
-                if (data.trim().split("\\s+").length>1){
-                    throw new WrongAmountOfElementsException("Для поля 'x' указано более одного аргумента!");
-                }
-                if (data.isEmpty()) {
-                    x = null;
-                } else if (data.trim().isEmpty()) {
-                    throw new NumberFormatException("Для поля 'x' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
-                } else {
-                    BigDecimal a;
-                    try {
-                        data=data.replace(",",".").trim();
-                        data=data.replaceAll("\\.0+$","");
-                        a = new BigDecimal(data);
-                    }
-                    catch (NumberFormatException e){
-                        throw new NumberFormatException("");
-                    }
-                    if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
-                        throw new NumberFormatException("Поле 'x' не может быть дробным числом!");
-                    }
-                    BigInteger b = new BigInteger(data);
-                    BigInteger startOfBounds = BigInteger.valueOf(Integer.MIN_VALUE);
-                    BigInteger endOfBounds = BigInteger.valueOf(Integer.MAX_VALUE);
-                    if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
-                        throw new ValueOutOfBoundsException("Поле 'x' должно находиться в диапазоне: " + startOfBounds + "<=x<=" + endOfBounds);
-                    }
-                    x = Long.valueOf(data);
-                }
-                Validator.validateXCoordinates(x);
-                return x;
-            } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
-                throw new FieldReadException("Не удалось считать поле 'x'! Поле 'x' должно быть целым числом!", e);
-            } catch (NotExistException | ValueOutOfBoundsException e) {
-                throw new FieldReadException("Не удалось считать поле 'x'!", e);
+            } else {
+                data = console.getFields().get(1);
             }
+
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'x' указано более одного аргумента!");
+            }
+
+            if (data.isEmpty() || data.trim().isEmpty()) {
+                throw new NumberFormatException("Для поля 'x' была введена пустая последовательность!");
+            }
+
+            BigDecimal a = new BigDecimal(data.replace(",", ".").trim().replaceAll("\\.0+$", ""));
+            if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
+                throw new NumberFormatException("Поле 'x' не может быть дробным числом!");
+            }
+
+            BigInteger b = new BigInteger(data);
+            if (b.compareTo(BigInteger.valueOf(Integer.MIN_VALUE)) < 0 ||
+                    b.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
+                throw new ValueOutOfBoundsException("Поле 'x' должно находиться в диапазоне: " + Integer.MIN_VALUE + " <= x <= " + Integer.MAX_VALUE);
+            }
+
+            x = Long.valueOf(data);
+            Validator.validateXCoordinates(x);
+            return x;
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'x'!");
+            throw new FieldReadException("Не удалось считать поле 'x'!", e);
+        }
     }
 
-    /**
-     * Считывает поле y.
-     *
-     * @param argument строковое значение
-     * @return значение координаты Y
-     */
     public static Double readFieldY(String argument) throws ValidateDataException, FieldReadException {
-            try {
-                String data;
-                Double y;
-                if (console.isFlagReadCollection()) {
-                    data = argument;
-                    if (data.equals("NULL")) {
-                        throw new NotExistException("Отсутствует тэг 'y'! Поле 'y' не инициализировано!");
-                    }
-                } else {
-                    data = console.getFields().get(2);
+        try {
+            String data;
+            Double y;
+            if (console.isFlagReadCollection()) {
+                data = argument;
+                if (data.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'y'! Поле 'y' не инициализировано!");
                 }
-                if (data.trim().split("\\s+").length>1){
-                    throw new WrongAmountOfElementsException("Для поля 'y' указано более одного аргумента!");
-                }
-                if (data.isEmpty()) {
-                    y = null;
-                } else if (data.trim().isEmpty()) {
-                    throw new NumberFormatException("Для поля 'y' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
-                } else {
-                    BigDecimal b;
-                    try {
-                        data = data.replace(",", ".");
-                        b = new BigDecimal(data);
-                    }
-                    catch (NumberFormatException e){
-                        throw new NumberFormatException("");
-                    }
-                    BigDecimal startOfBounds = BigDecimal.valueOf(Double.MIN_VALUE);
-                    BigDecimal endOfBounds = BigDecimal.valueOf(414);
-                    if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
-                        throw new ValueOutOfBoundsException("Поле 'y' должно находиться в диапазоне: " + startOfBounds + "<=id<=" + endOfBounds);
-                    }
-                    y = Double.valueOf(data);
-                    BigDecimal visualY = new BigDecimal(String.valueOf(y));
-                    visualY = visualY.stripTrailingZeros();
-                    if (b.stripTrailingZeros().compareTo(visualY)!=0){
-                        System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'y': " + y);
-                    }
-                }
-                Validator.validateYCoordinates(y);
-                return y;
+            } else {
+                data = console.getFields().get(2);
             }
-            catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
-                throw new FieldReadException("Не удалось считать поле 'y'! Поле 'y' должно быть числом!",e);
-            }
-            catch (NotExistException |ValueOutOfBoundsException e ){
-                throw new FieldReadException("Не удалось считать поле 'y'!",e);
-            }
-    }
 
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'y' указано более одного аргумента!");
+            }
+
+            if (data.isEmpty() || data.trim().isEmpty()) {
+                throw new NumberFormatException("Для поля 'y' была введена пустая последовательность!");
+            }
+
+            BigDecimal b = new BigDecimal(data.replace(",", ".").trim());
+            BigDecimal endOfBounds = BigDecimal.valueOf(414);
+
+            if (b.compareTo(endOfBounds) > 0) {
+                throw new ValueOutOfBoundsException("Поле 'y' должно быть <= 414");
+            }
+
+            y = Double.valueOf(data);
+            Validator.validateYCoordinates(y);
+            return y;
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'y'!");
+            throw new FieldReadException("Не удалось считать поле 'y'!", e);
+        }
+    }
 
     public static LocalDate readFieldCreationDate(String argument) throws ValidateDataException, FieldReadException {
         try {
             String data = argument;
             LocalDate creationDate;
-            if (data.trim().split("\\s+").length>1){
+
+            if (data.trim().split("\\s+").length > 1) {
                 throw new WrongAmountOfElementsException("Для поля 'creationDate' указано более одного аргумента!");
             }
-            if (data.isEmpty()) {
-                creationDate = null;
-            } else if (data.trim().isEmpty()) {
-                throw new NumberFormatException("Для поля 'creationDate' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+
+            if (data.isEmpty() || data.trim().isEmpty()) {
+                creationDate = LocalDate.now();
             } else if (data.equals("NULL")) {
                 creationDate = LocalDate.now();
             } else {
-                try {
-                    creationDate = LocalDate.parse(argument);
-                }
-                catch (DateTimeParseException e){
-                    throw new IllegalArgumentException("");
-                }
+                creationDate = LocalDate.parse(data);
             }
+
             Validator.validateCreationDateVehicle(creationDate);
             return creationDate;
-        }
-        catch (WrongAmountOfElementsException | IllegalArgumentException | ValidateDataException e){
-            throw new FieldReadException("Не удалось считать поле 'creationDate'! Поле 'creationDate' должно представлять собой дату в формате: yyyy-MM-dd !",e);
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'creationDate'!");
+            throw new FieldReadException("Не удалось считать поле 'creationDate'!", e);
         }
     }
-
 
     public static float readFieldEnginePower(String argument) throws ValidateDataException, FieldReadException {
-       try {
-                String data;
-                if (console.isFlagReadCollection()){
-                    data=argument;
-                    if(data.equals("NULL")){
-                        throw new NotExistException("Отсутствует тэг 'enginePower'! Поле 'enginePower' не инициализировано!");
-                    }
+        try {
+            String data;
+            if (console.isFlagReadCollection()) {
+                data = argument;
+                if (data.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'enginePower'!");
                 }
-                else {
-                    data = console.getFields().get(3);
-                }
-                float enginePower;
-                if (data.trim().split("\\s+").length>1){
-                    throw new WrongAmountOfElementsException("Для поля 'enginePower' указано более одного аргумента!");
-                }
-                if (data.isEmpty()) {
-                    throw new IllegalArgumentException("Поле 'enginePower' не может быть пустой строкой!");
-                }
-                else if (data.trim().isEmpty()){
-                    throw new NumberFormatException("Для поля 'enginePower' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
-                }
-                else {
-                    BigDecimal b;
-                    try {
-                        data = data.replace(",",".").trim();
-                        b = new BigDecimal(data);
-                    }
-                    catch (NumberFormatException e){
-                        throw new NumberFormatException("");
-                    }
-                    BigDecimal startOfBounds = BigDecimal.ZERO;
-                    BigDecimal endOfBounds = BigDecimal.valueOf(Float.MAX_VALUE);
-                    if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0){
-                        throw new ValueOutOfBoundsException("Поле 'enginePower' должно находиться в диапазоне: " + startOfBounds + "<=enginePower<=" + endOfBounds);
-                    }
-                    /*
-                    enginePower = Float.parseFloat(data);
-                    if (b.compareTo(BigDecimal.valueOf(enginePower))!=0){
-                        System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'enginePower': " + enginePower);
-                    }
-                     */
-                    enginePower = Float.parseFloat(data);
-                    BigDecimal visualEnginePower = new BigDecimal(String.valueOf(enginePower));
-                    visualEnginePower = visualEnginePower.stripTrailingZeros();
-                    if (b.stripTrailingZeros().compareTo(visualEnginePower)!=0){
-                        System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'enginePower': " + enginePower);
-                    }
-                }
-                return enginePower;
-            } catch (NotExistException | ValueOutOfBoundsException e) {
-                throw  new FieldReadException("Не удалось считать поле 'enginePower'!",e);
+            } else {
+                data = console.getFields().get(3);
             }
-            catch (WrongAmountOfElementsException | NumberFormatException e) {
-                throw  new FieldReadException("Не удалось считать поле 'enginePower'! Поле 'enginePower' должно быть числом!",e);
+
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'enginePower' указано более одного аргумента!");
             }
-            catch (IllegalArgumentException e) {
-                throw  new FieldReadException("Не удалось считать поле 'enginePower'! Поле 'enginePower' должно быть числом!",e);
-            }
+
+            float enginePower = Float.parseFloat(data.replace(",", ".").trim());
+            return enginePower;
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'enginePower'!");
+            throw new FieldReadException("Не удалось считать поле 'enginePower'!", e);
+        }
     }
 
-    /**
-     * Считывает поле numberOfWheels.
-     *
-     * @param argument строковое значение
-     * @return количество колёс
-     */
     public static Long readFieldNumberOfWheels(String argument) throws ValidateDataException, FieldReadException {
         try {
-                String data;
-                Long numberOfWheels;
-                if (console.isFlagReadCollection()) {
-                    data = argument;
-                    if (data.equals("NULL")) {
-                        throw new NotExistException("Отсутствует тэг 'numberOfWheels'! Поле 'numberOfWheels' не инициализировано!");
-                    }
-                } else {
-                    data = console.getFields().get(4);
+            String data;
+            if (console.isFlagReadCollection()) {
+                data = argument;
+                if (data.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'numberOfWheels'!");
                 }
-                if (data.trim().split("\\s+").length>1){
-                    throw new WrongAmountOfElementsException("Для поля 'numberOfWheels' указано более одного аргумента!");
-                }
-                if (data.isEmpty()) {
-                    numberOfWheels = null;
-                } else if (data.trim().isEmpty()) {
-                    throw new NumberFormatException("Для поля 'numberOfWheels' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
-                } else {
-                    BigDecimal a;
-                    try {
-                        data = data.replace(",",".").trim();
-                        data=data.replaceAll("\\.0+$","");
-                        a = new BigDecimal(data);
-                    }
-                    catch (NumberFormatException e){
-                        throw new NumberFormatException("");
-                    }
-                    if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
-                        throw new NumberFormatException("Поле 'numberOfWheels' не может быть дробным числом!");
-                    }
-                    BigInteger b = new BigInteger(data);
-                    BigInteger startOfBounds = BigInteger.ZERO;
-                    BigInteger endOfBounds = BigInteger.valueOf(Integer.MAX_VALUE);
-                    if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
-                        throw new ValueOutOfBoundsException("Поле 'numberOfWheels' должно находиться в диапазоне: " + startOfBounds + "<=numberOfWheels<=" + endOfBounds);
-                    }
-                    numberOfWheels = Long.valueOf(data);
-                }
-                Validator.validateNumberOfWheelsVehicle(numberOfWheels);
-                return numberOfWheels;
+            } else {
+                data = console.getFields().get(4);
             }
-            catch (NotExistException | ValueOutOfBoundsException e) {
-                throw  new FieldReadException("Не удалось считать поле 'numberOfWheels'!",e);
+
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'numberOfWheels' указано более одного аргумента!");
             }
-            catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
-                throw  new FieldReadException("Не удалось считать поле 'numberOfWheels'! Поле 'numberOfWheels' должно быть целым числом!",e);
-            }
+
+            Long numberOfWheels = Long.valueOf(data);
+            Validator.validateNumberOfWheelsVehicle(numberOfWheels);
+            return numberOfWheels;
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'numberOfWheels'!");
+            throw new FieldReadException("Не удалось считать поле 'numberOfWheels'!", e);
+        }
     }
 
+    public static VehicleType readFieldType(String argument) throws NotExistException, ValidateDataException, FieldReadException {
+        try {
+            String data;
+            if (console.isFlagReadCollection()) {
+                data = argument;
+                if (data.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'type'!");
+                }
+            } else {
+                data = console.getFields().get(5);
+            }
 
-    public static VehicleType readFieldType(String argument) throws NotExistException, ValidateDataException, FieldReadException, EnumConstantNotPresentException {
-     try {
-                String data;
-                VehicleType type;
-                if (console.isFlagReadCollection()) {
-                    data = argument;
-                    if (data.equals("NULL")) {
-                        throw new NotExistException("Отсутствует тэг 'type'! Поле 'type' не инициализировано!");
-                    }
-                } else {
-                    data = console.getFields().get(5);
-                }
-                if (data.trim().split("\\s+").length>1){
-                    throw new WrongAmountOfElementsException("Для поля 'type' указано более одного аргумента!");
-                }
-                if (data.isEmpty()) {
-                    type = null;
-                } else if (data.trim().isEmpty()) {
-                    throw new IllegalArgumentException("Для поля 'type' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
-                } else {
-                    try {
-                        type = VehicleType.valueOf(data.trim());
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Несуществующая константа для поля 'type'!");
-                    }
-                }
-                Validator.validateTypeVehicle(type);
-                return type;
-            }
-            catch (NotExistException e) {
-                throw new FieldReadException("Не удалось считать поле 'type'!",e);
-            }
-            catch (WrongAmountOfElementsException | ValidateDataException | IllegalArgumentException e) {
-                throw new FieldReadException("Не удалось считать поле 'type'! Поле 'type' должно быть одной из констант набора " + Arrays.toString(VehicleType.class.getEnumConstants()) + " !",e);
-            }
+            VehicleType type = VehicleType.valueOf(data.trim());
+            Validator.validateTypeVehicle(type);
+            return type;
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'type'!");
+            throw new FieldReadException("Не удалось считать поле 'type'!", e);
+        }
     }
-
 
     public static FuelType readFieldFuelType(String argument) throws NotExistException, FieldReadException {
-      try {
-                String data;
-                FuelType fuelType;
-                if (console.isFlagReadCollection()) {
-                    data = argument;
-                    if (data.equals("NULL")) {
-                        throw new NotExistException("Отсутствует тэг 'fuelType'! Поле 'fuelType' не инициализировано!");
-                    }
-                } else {
-                    data = console.getFields().get(6);
+        try {
+            String data;
+            if (console.isFlagReadCollection()) {
+                data = argument;
+                if (data.equals("NULL")) {
+                    throw new NotExistException("Отсутствует тэг 'fuelType'!");
                 }
-                if (data.trim().split("\\s+").length>1){
-                    throw new WrongAmountOfElementsException("Для поля 'fuelType' указано более одного аргумента!");
-                }
-                if (data.isEmpty()) {
-                    fuelType = null;
-                } else if (data.trim().isEmpty()) {
-                    throw new IllegalArgumentException("Для поля 'fuelType' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
-                } else {
-                    try {
-                        fuelType = FuelType.valueOf(data.trim());
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Несуществующая константа для поля 'fuelType'!");
-                    }
-                }
-                return fuelType;
+            } else {
+                data = console.getFields().get(6);
             }
-            catch (NotExistException e) {
-                throw new FieldReadException("Не удалось считать поле 'fuelType'!",e);
-            }
-            catch (WrongAmountOfElementsException | IllegalArgumentException e) {
-                throw new FieldReadException("Не удалось считать поле 'fuelType'! Поле 'fuelType' должно быть одной из констант набора " + Arrays.toString(FuelType.class.getEnumConstants()) +" !",e);
-            }
+
+            FuelType fuelType = FuelType.valueOf(data.trim());
+            return fuelType;
+
+        } catch (Exception e) {
+            printErrorIfNotScript("Не удалось считать поле 'fuelType'!");
+            throw new FieldReadException("Не удалось считать поле 'fuelType'!", e);
         }
+    }
 }

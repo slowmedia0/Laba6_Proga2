@@ -15,7 +15,7 @@ public class RequestHandler {
     private static final int BUFFER_SIZE = 65536;
 
     /**
-     * Главный метод обработки запроса — вызывается из UDPServer
+     * Главный метод обработки запроса
      */
     public static void handleRequest(DatagramChannel channel, Selector selector,
                                      Console console, FileManager fileManager) {
@@ -38,17 +38,17 @@ public class RequestHandler {
             Response response;
             String cmd = request.getNameOfCommand();
 
-            ResponseBuilder.clear(); // очищаем перед каждой командой
+            // Очищаем builder перед каждой новой командой
+            ResponseBuilder.clear();
 
             if ("load_file".equals(cmd)) {
                 response = handleLoadFile(request, console);
             }
+            else if ("exit".equalsIgnoreCase(cmd)) {
+                response = handleExit(request, console, fileManager);
+            }
             else {
                 response = processCommand(request, console);
-
-                if ("exit".equalsIgnoreCase(cmd)) {
-                    System.out.println("Клиент с адресом " + clientAddress + " отключился! Ожидаю новые подключения");
-                }
             }
 
             // Отправляем ответ
@@ -56,19 +56,21 @@ public class RequestHandler {
 
         } catch (Exception e) {
             ResponseBuilder.clear();
-            ResponseBuilder.appendError("Ошибка обработки запроса: " + e.getMessage());
-            Response response = new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
+            ResponseBuilder.appendError("Критическая ошибка сервера: " + e.getMessage());
 
-            // Попытка отправить ошибку клиенту
+            Response errorResponse = new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
+
             try {
-                ResponseSender.sendResponse(channel, clientAddress, response);
+                if (clientAddress != null) {
+                    ResponseSender.sendResponse(channel, clientAddress, errorResponse);
+                }
             } catch (Exception ignored) {}
 
             e.printStackTrace();
         }
     }
 
-    // ==================== Вспомогательные методы ====================
+    // ==================== Обработчики команд ====================
 
     private static Response handleLoadFile(CommandRequest request, Console console) {
         try {
@@ -83,15 +85,46 @@ public class RequestHandler {
             ExitCodeCommand result = console.loadCollectionFromBytes(fileName, fileData);
 
             if (result == ExitCodeCommand.OK) {
-                ResponseBuilder.append("Файл успешно загружен на сервер");
+                ResponseBuilder.append("Файл успешно загружен и коллекция обновлена.");
             } else {
-                ResponseBuilder.appendError("Не удалось загрузить файл");
+                ResponseBuilder.appendError("Не удалось загрузить файл.");
             }
 
             return new Response(result, ResponseBuilder.getOutput());
 
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка загрузки файла: " + e.getMessage());
+            ResponseBuilder.appendError("Ошибка при загрузке файла: " + e.getMessage());
+            return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
+        }
+    }
+
+    private static Response handleExit(CommandRequest request, Console console, FileManager fileManager) {
+        try {
+            ResponseBuilder.append("Сервер завершает работу...");
+
+            boolean saved = fileManager.writeCollection();
+            console.sortCollectionIfNeeded("exit");           // сортировка перед отправкой
+            byte[] fileData = fileManager.getCollectionAsBytes();
+
+            if (saved) {
+                ResponseBuilder.append("Коллекция успешно сохранена.");
+            } else {
+                ResponseBuilder.appendError("Не удалось сохранить коллекцию в файл!");
+            }
+
+            Response response = new Response(
+                    saved ? ExitCodeCommand.OK : ExitCodeCommand.ERROR,
+                    ResponseBuilder.getOutput()
+            );
+
+            response.setFileData(fileData);
+            response.setFileName(console.getLoadFileName());
+
+            System.out.println("Клиент отключился. Ожидаю новые подключения...");
+            return response;
+
+        } catch (Exception e) {
+            ResponseBuilder.appendError("Ошибка при завершении работы: " + e.getMessage());
             return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
         }
     }
@@ -104,26 +137,27 @@ public class RequestHandler {
             ExitCodeCommand result;
 
             if (request.getVehicle() != null) {
-                result = console.launchCommand(commandName, argument, request.getVehicle(), null, null);
+                result = console.launchCommand(commandName, argument, request.getVehicle(), null,null);
             } else {
                 result = console.launchCommand(commandName, argument);
             }
 
-            // Сортировка (оставлено как было)
-            if (commandName.equals("show")) {
+            // Сортировка после изменяющих команд
+            if (!commandName.equals("show") && !commandName.equals("info")) {
                 console.sortCollectionIfNeeded(commandName);
             }
 
-            String message = (result == ExitCodeCommand.OK)
+            String statusMessage = (result == ExitCodeCommand.OK)
                     ? "Команда выполнена успешно."
                     : "Команда выполнена с ошибками.";
 
-            ResponseBuilder.append(message);
+            ResponseBuilder.append(statusMessage);
 
-            return new Response(result, ResponseBuilder.getOutput());
-
+            Response response = new Response(result, ResponseBuilder.getOutput());
+            System.out.println(ResponseBuilder.getOutput());
+            return response;
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка выполнения команды: " + e.getMessage());
+            ResponseBuilder.appendError("Ошибка выполнения команды '" + request.getNameOfCommand() + "': " + e.getMessage());
             return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
         }
     }
