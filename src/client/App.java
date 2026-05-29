@@ -1,6 +1,7 @@
 package client;
 
 import client.utility.FieldReaderClient;
+import client.utility.FileManagerClient;
 import client.utility.UserHandler;
 import common.ExitCodeCommand;
 
@@ -35,7 +36,7 @@ public class App {
          */
         String host = "localhost";
         int port = 2222;
-        String filename = "src\\inputdata.xml";
+        String filename = "src\\input_data.xml";
 
         System.out.println("=== Клиент запускается ===");
         System.out.println("Сервер: " + host + ":" + port);
@@ -45,8 +46,9 @@ public class App {
         try (Scanner scanner = new Scanner(System.in)) {
 
             UDPClient udpClient = new UDPClient(host, port);
+            FileManagerClient fileManagerClient = new FileManagerClient();
 
-            UserHandler userHandler = new UserHandler(udpClient, scanner);
+            UserHandler userHandler = new UserHandler(udpClient, scanner,fileManagerClient);
 
             // Настройка FieldReaderClient
             FieldReaderClient.setUserHandler(userHandler);
@@ -58,7 +60,7 @@ public class App {
 
             Thread mainThread = Thread.currentThread();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (userHandler.getExitCodeStatus().equals(ExitCodeCommand.CTRL_C)) {
+                if (userHandler.getExitCodeCommandStatus().equals(ExitCodeCommand.CTRL_C)) {
                     System.out.println();
                     System.out.println("Вы использовали Ctrl+C.");
                 }

@@ -13,7 +13,7 @@ public class RemoveByIdCommand extends AbstractCommand{
 
     //Для метода createCommand из UserHandler
     public RemoveByIdCommand(String argument) {
-        super("remove_by_id id","удалить элемент из коллекции по его id");
+        super("remove_by_id","удалить элемент из коллекции по его id");
         this.argument=argument;
     }
 

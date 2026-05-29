@@ -12,13 +12,15 @@ public class RemoveGreaterCommand extends AbstractCommand{
     private Vehicle vehicle;
 
     //Для метода createCommand из UserHandler
-    public RemoveGreaterCommand(String argument) {
+    public RemoveGreaterCommand(String argument,boolean flag) {
         super("remove_greater","удалить из коллекции все элементы, превышающие заданный");
         this.argument=argument;
-        try {
-            this.vehicle= FieldReaderClient.askVehicleObject();
-        }catch (Exception e){
-            System.out.println(e.getMessage());
+        if (flag) {
+            try {
+                this.vehicle = FieldReaderClient.askVehicleObject();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 

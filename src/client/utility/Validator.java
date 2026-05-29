@@ -3,7 +3,6 @@ package client.utility;
 import common.exceptions.NotExistException;
 import common.exceptions.ValidateDataException;
 import common.models.*;
-import server.utility.FileManager;
 
 import java.io.File;
 import java.nio.file.AccessDeniedException;
@@ -218,7 +217,7 @@ public class Validator {
      * @param modeOfFileManager режим работы файлового менеджера
      * @return true, если имя файла корректно
      */
-    public static boolean validateNameOfFile(String nameOfFile, FileManager.ModeOfFileManager modeOfFileManager){
+    public static boolean validateNameOfFile(String nameOfFile, FileManagerClient.ModeOfFileManager modeOfFileManager){
         File file = new File(nameOfFile);
         switch (modeOfFileManager) {
             case READ_COLLECTION:

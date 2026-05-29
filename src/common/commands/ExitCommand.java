@@ -6,11 +6,6 @@ import common.exceptions.WrongAmountOfElementsException;
 import common.interaction.Response;
 import server.utility.FileManager;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-
 public class ExitCommand extends AbstractCommand{
     private FileManager fileManager;
     private UserHandler userHandler;
@@ -52,7 +47,6 @@ public class ExitCommand extends AbstractCommand{
         if (!valid.equals(ExitCodeCommand.OK)){
             return valid;
         }
-
 
         // === Логика сервера ===
         if (fileManager != null) {

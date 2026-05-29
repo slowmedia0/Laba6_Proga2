@@ -1,11 +1,8 @@
 package server;
 
-import client.utility.FieldReaderClient;
 import common.commands.*;
 import server.utility.*;
-
-import java.io.File;
-import java.util.Scanner;
+import server.utility.FileManager;
 
 public class App {
 
@@ -34,16 +31,16 @@ public class App {
             );
             Console console = new Console(commandManger, fileManager, collectionManager);
 
-            commandManger.getExecuteScriptCommand().setConsole(console);
+            commandManger.getExitCommand().setFileManager(fileManager);
             FieldReaderServer.setConsole(console);
+
 
             UDPServer server = new UDPServer(console, fileManager);
             System.out.println("=== Сервер успешно запущен ===");
             System.out.println("Ожидание подключения клиента...");
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("\nЗавершение сервера. Сохранение коллекции...");
-                fileManager.writeCollection();
+                System.out.println("\nЗавершение сервера.");
             }));
 
             server.start();

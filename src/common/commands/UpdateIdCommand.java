@@ -15,13 +15,15 @@ public class UpdateIdCommand extends AbstractCommand{
     private CollectionManager collectionManager;
 
     //Для метода createCommand из UserHandler
-    public UpdateIdCommand(String argument){
-        super("update id","обновить значение элемента коллекции, id которого равен заданному");
+    public UpdateIdCommand(String argument,boolean flag){
+        super("update","обновить значение элемента коллекции, id которого равен заданному");
         this.argument=argument;
-        try {
-            this.vehicle= FieldReaderClient.askVehicleObject();
-        }catch (Exception e){
-            System.out.println(e.getMessage());
+        if (flag) {
+            try {
+                this.vehicle = FieldReaderClient.askVehicleObject();
+            } catch (Exception e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 

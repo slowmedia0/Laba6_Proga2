@@ -4,36 +4,43 @@ import client.UDPClient;
 import common.ExitCodeCommand;
 import common.commands.*;
 import common.exceptions.CommandNotExist;
+import common.exceptions.ScriptRecursionException;
+import common.exceptions.ValidateDataException;
 import common.interaction.Response;
-import server.utility.FileManager;
+import server.utility.FieldReaderServer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class UserHandler {
-    public ExitCodeCommand exitCodeStatus = ExitCodeCommand.CTRL_C;
+    public ExitCodeCommand ExitCodeCommandStatus = ExitCodeCommand.CTRL_C;
     private UDPClient udpClient;
     private Scanner userScanner;
     private  String loadFileName;      // имя загрузочного файла
     private  byte[] loadFileData;      // содержимое загрузочного файла (для exit/save)
+    private ArrayList<String> arguments;
+    private boolean flagScript;
+    private boolean flagReadCollection;
+    private ArrayList<String> fields = new ArrayList<>(7);
+    private FileManagerClient fileManagerClient;
 
-
-    public ExitCodeCommand getExitCodeStatus() {
-        return exitCodeStatus;
+    public ExitCodeCommand getExitCodeCommandStatus() {
+        return ExitCodeCommandStatus;
     }
 
-    public void setExitCodeStatus(ExitCodeCommand exitCodeStatus) {
-        this.exitCodeStatus = exitCodeStatus;
+    public void setExitCodeCommandStatus(ExitCodeCommand ExitCodeCommandStatus) {
+        this.ExitCodeCommandStatus = ExitCodeCommandStatus;
     }
 
-    public UserHandler(UDPClient udpClient, Scanner userScanner) {
+    public UserHandler(UDPClient udpClient, Scanner userScanner, FileManagerClient fileManagerClient) {
         this.udpClient = udpClient;
         this.userScanner = userScanner;
+        this.fileManagerClient = fileManagerClient;
+        this.arguments=new ArrayList<>();
     }
 
     public String getLoadFileName() {
@@ -44,10 +51,158 @@ public class UserHandler {
         return loadFileData;
     }
 
+    public ArrayList<String> getFields() {
+        return fields;
+    }
+
+    public boolean isFlagReadCollection() {
+        return flagReadCollection;
+    }
+
+    public boolean isFlagScript() {
+        return flagScript;
+    }
+
+    public ArrayList<String> getArguments() {
+        return arguments;
+    }
+
+    public ExitCodeCommand scriptMode(String argument){
+        ExitCodeCommand flagSuccessExecute = ExitCodeCommand.OK;
+        try {
+            int n=-1;
+            boolean flagElemCommand = true;
+            int index=n;
+            arguments.add(argument);
+            String mnemonics = "";
+            String arg = "";
+            if (fileManagerClient.readScript(argument)==null){
+                throw new NullPointerException("");
+            }
+            for (var maybeCommand: fileManagerClient.readScript(argument)){
+                try {
+                    n += 1;
+                    ArrayList<String> command = new ArrayList<>(2);
+                    for (var i : maybeCommand.trim().split("\\s+", 2)) {
+                        command.add(i);
+                    }
+                    if (command.size() != 0) {
+                        if (command.size() == 1) {
+                            command.add("");
+                        }
+                    }
+                    if (flagElemCommand == true) {
+                        if (command.get(0).equals("execute_script") && arguments.contains(command.get(1))) {
+                            File file1 = new File(argument);
+                            for (int i = 0; i < arguments.size(); i++) {
+                                File file2 = new File(arguments.get(i));
+                                if (file1.getAbsolutePath().equals(file2.getAbsolutePath())) {
+                                    throw new ScriptRecursionException("Не удалось выполнить без ошибок команду " + command.get(0) + " " + command.get(1) + " в скрипте " + argument + " ! Рекурсивный вызов скрипта '" + command.get(1) + "'!");
+                                }
+                            }
+                        } else if (command.get(0).equals("add") || command.get(0).equals("update") || command.get(0).equals("remove_greater")) {
+                            flagElemCommand = false;
+                            index = n + 7;
+                            mnemonics = command.get(0);
+                            arg = command.get(1);
+                        } else if (executeCommandFromScript(command.get(0), command.get(1)).equals(ExitCodeCommand.OK) == false) {
+                            if (command.get(0).equals("execute_script")) {
+                                System.out.println("Не удалось выполнить без ошибок команду " + command.get(0) + " " + command.get(1) + " в скрипте " + argument + " !");
+                            } else {
+                                System.out.println("Не удалось выполнить команду " + command.get(0) + " " + command.get(1) + " в скрипте " + argument + " !");
+                            }
+                            flagSuccessExecute = ExitCodeCommand.ERROR;
+                        } else {
+                            System.out.println();
+                        }
+                    } else {
+                        fields.add(maybeCommand);
+                        if (n == index) {
+                            // ←←← КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ←←←
+                            ExitCodeCommand result = executeCommandWithVehicle(mnemonics, arg, new ArrayList<>(fields));
+
+                            if (result != ExitCodeCommand.OK) {
+                                System.out.println("Не удалось выполнить команду " + mnemonics + " " + arg + " в скрипте " + argument + " !");
+                                flagSuccessExecute = ExitCodeCommand.ERROR;
+                            } else {
+                                System.out.println();
+                            }
+
+                            fields.clear();
+                            flagElemCommand = true;
+                        }
+                    }
+                }
+                catch (ScriptRecursionException e){
+                    System.out.println(e.getMessage());
+                    flagSuccessExecute=ExitCodeCommand.ERROR;
+                }
+            }
+        }
+        catch (IllegalStateException e){
+            System.out.println(e.getMessage());
+            flagSuccessExecute=ExitCodeCommand.ERROR;
+        }
+        catch (NullPointerException e){
+            flagSuccessExecute=ExitCodeCommand.ERROR;
+        }
+        catch (IndexOutOfBoundsException e){
+            System.out.println("В скрипте нет команд!");
+            flagSuccessExecute= ExitCodeCommand.ERROR;
+        }
+        return flagSuccessExecute;
+    }
+
+    /**
+     * Выполняет команду, которая требует объект Vehicle (add, update, remove_greater)
+     */
+    private ExitCodeCommand executeCommandWithVehicle(String mnemonics, String argument, ArrayList<String> objectFields) {
+
+        Command commandObject = createCommand(mnemonics, argument);
+        if (commandObject == null) {
+            return ExitCodeCommand.ERROR;
+        }
+
+        // Здесь нужно передать собранные поля в команду
+        try {
+            if (commandObject instanceof AddCommand) {
+                ((AddCommand) commandObject).setVehicle(FieldReaderClient.askVehicleObject());
+            } else if (commandObject instanceof UpdateIdCommand) {
+                ((UpdateIdCommand) commandObject).setVehicle(FieldReaderClient.askVehicleObject());
+            } else if (commandObject instanceof RemoveGreaterCommand) {
+                ((RemoveGreaterCommand) commandObject).setVehicle(FieldReaderClient.askVehicleObject());
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка создания объекта Vehicle: " + e.getMessage());
+            return ExitCodeCommand.ERROR;
+        }
+
+
+        try {
+            if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
+                throw new ValidateDataException("Команда '" + mnemonics + "' " + argument + " не валидна!");
+            }
+        }
+        catch (ValidateDataException e){
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.ERROR;
+        }
+
+        // Отправка на сервер
+        CommandRequest request = createCommandRequest(commandObject);
+        Response response = udpClient.sendRequest(request);
+
+        if (response != null && response.getMessage() != null && !response.getMessage().isEmpty()) {
+            System.out.println("   " + response.getMessage());
+        }
+
+        return (response != null && response.isSuccess()) ? ExitCodeCommand.OK : ExitCodeCommand.ERROR;
+    }
+
     public void interactiveMode(String nameOfLoadFile) {
         //Считаем путь или имя загрузочного файла
         String nameOfFile=nameOfLoadFile;
-        while (Validator.validateNameOfFile(nameOfFile, FileManager.ModeOfFileManager.READ_COLLECTION)==false){
+        while (Validator.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_COLLECTION)==false){
             nameOfFile= FieldReaderClient.askFile();
         }
         this.loadFileName=nameOfFile;
@@ -55,14 +210,15 @@ public class UserHandler {
             File file = new File(nameOfFile);
             this.loadFileData = Files.readAllBytes(file.toPath());
         } catch (IOException e) {
-            System.err.println("Ошибка чтения загрузочного файла: " + e.getMessage());
-            this.loadFileData = new byte[0]; // пустой массив в случае ошибки
+            System.out.println("Ошибка чтения загрузочного файла: " + e.getMessage());
+            this.loadFileData = new byte[0];
         }
 
 
         //Отправляем загрузочного файл на сервер
         sendLoadFileToServer();
 
+        flagReadCollection=false;
 
         //Считывание команд с терминала пользователя
         try {
@@ -83,22 +239,40 @@ public class UserHandler {
                 // Создание объекта команды
                 Command commandObject = createCommand(command.get(0), command.get(1));
 
-                if (commandObject == null) continue;
+                if (commandObject == null) {continue;}
 
                 // Валидация команды
-                if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
-                    System.out.println("Команда не валидна");
+                try {
+                    if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
+                        throw new ValidateDataException("Команда '" + command.get(0) + "' " + command.get(1) + " не валидна!");
+                    }
+                }
+                catch (ValidateDataException e){
+                    System.out.println(e.getMessage());
                     continue;
                 }
 
                 // Создание запроса и отправка на сервер
+
+                if ("execute_script".equalsIgnoreCase(commandObject.getNameOfCommand())) {
+                    flagScript=true;
+                    ExecuteScriptCommand executeScriptCommand = (ExecuteScriptCommand) commandObject;
+                    executeScriptCommand.setUserHandler(this);
+                    if (!executeScriptCommand.execute().equals(ExitCodeCommand.OK)){
+                           System.out.println("Не удалось выполнить команду");
+                    }
+                    continue;
+                }
+
                 CommandRequest request = createCommandRequest(commandObject);
+
                 Response response = udpClient.sendRequest(request);
 
                 if ("exit".equalsIgnoreCase(commandObject.getNameOfCommand())) {
                     handleExitResponse(response);
                     return;
                 }
+
 
                 // Вывод ответа сервера (для остальных команд)
                 if (response != null) {
@@ -111,10 +285,60 @@ public class UserHandler {
         }
         catch(NoSuchElementException e){
             System.out.println(e.getMessage());
-            exitCodeStatus= ExitCodeCommand.CTRL_D;
+            ExitCodeCommandStatus= ExitCodeCommand.CTRL_D;
             System.exit(0);
         }
     }
+
+    /**
+     * Выполняет одну команду и отправляет её на сервер (аналогично interactiveMode)
+     */
+    private ExitCodeCommand executeCommandFromScript(String mnemonics, String argument) {
+
+        // Создание объекта команды
+        Command commandObject = createCommand(mnemonics, argument);
+        if (commandObject == null) {
+            return ExitCodeCommand.ERROR;
+        }
+
+        // Валидация команды
+        try {
+            if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
+                throw new ValidateDataException("Команда '" + mnemonics + "' " + argument + " не валидна!");
+            }
+        } catch (ValidateDataException e) {
+            System.out.println(e.getMessage());
+            return ExitCodeCommand.ERROR;
+        }
+
+        // Специальная обработка execute_script (рекурсия)
+        if ("execute_script".equalsIgnoreCase(mnemonics)) {
+            ExecuteScriptCommand esc = (ExecuteScriptCommand) commandObject;
+            flagScript=true;
+            esc.setUserHandler(this);
+            String path = esc.getFileName() != null ? esc.getFileName() : argument;
+            return scriptMode(path);   // рекурсивный вызов
+        }
+
+        // Отправка на сервер
+        CommandRequest request = createCommandRequest(commandObject);
+        Response response = udpClient.sendRequest(request);
+
+        // Специальная обработка exit
+        if ("exit".equalsIgnoreCase(mnemonics)) {
+            handleExitResponse(response);
+            // Можно вернуть EXIT, чтобы прервать скрипт
+            return ExitCodeCommand.EXIT;
+        }
+
+        // Вывод ответа сервера
+        if (response != null && response.getMessage() != null && !response.getMessage().isEmpty()) {
+            System.out.println("   " + response.getMessage());
+        }
+
+        return (response != null && response.isSuccess()) ? ExitCodeCommand.OK : ExitCodeCommand.ERROR;
+    }
+
 
     public Command createCommand(String mnemonics, String argument){
         try {
@@ -129,10 +353,20 @@ public class UserHandler {
                     return new ShowCommand(argument);
                 }
                 case "add": {
-                    return new AddCommand(argument);
+                    if (flagScript==true) {
+                        return new AddCommand(argument, false);
+                    }
+                    else {
+                        return new AddCommand(argument, true);
+                    }
                 }
                 case "update": {
-                    return new UpdateIdCommand(argument);
+                    if (flagScript==true) {
+                        return new UpdateIdCommand(argument, false);
+                    }
+                    else {
+                        return new UpdateIdCommand(argument, true);
+                    }
                 }
                 case "remove_by_id": {
                     return new RemoveByIdCommand(argument);
@@ -140,14 +374,19 @@ public class UserHandler {
                 case "clear": {
                     return new ClearCommand(argument);
                 }
-                case "execute_script": {
-                    return new ExecuteScriptCommand(argument);
-                }
                 case "exit": {
                     return new ExitCommand(argument);
                 }
+                case "execute_script": {
+                    return new ExecuteScriptCommand(argument);
+                }
                 case "remove_greater": {
-                    return new RemoveGreaterCommand(argument);
+                    if (flagScript==true){
+                        return new RemoveGreaterCommand(argument,false);
+                    }
+                    else {
+                        return new RemoveGreaterCommand(argument,true);
+                    }
                 }
                 case "reorder": {
                     return new ReorderCommand(argument);
@@ -180,14 +419,10 @@ public class UserHandler {
 
     public CommandRequest createCommandRequest(Command command){
             switch (command.getNameOfCommand()) {
-                case "help", "remove_by_id", "info", "show", "clear", "reorder", "sort",
+                case "help", "remove_by_id", "exit", "info", "show", "clear", "reorder", "sort",
                      "sum_of_engine_power", "print_field_ascending_number_of_wheels",
                      "print_field_descending_number_of_wheels": {
                     return new CommandRequest(command.getNameOfCommand(),command.getArgument());
-                }
-                case "execute_script": {
-                    ExecuteScriptCommand executeScriptCommand = (ExecuteScriptCommand) command;
-                    return new CommandRequest(command.getNameOfCommand(),command.getArgument(),executeScriptCommand.getFileName(),executeScriptCommand.getFileData());
                 }
                 case "add": {
                     AddCommand addCommand = (AddCommand) command;
@@ -245,8 +480,9 @@ public class UserHandler {
 
         System.out.println("Клиент завершает работу.");
         udpClient.close();
-        exitCodeStatus = ExitCodeCommand.EXIT;
+        ExitCodeCommandStatus = ExitCodeCommand.EXIT;
         System.exit(0);
     }
+
 
 }
