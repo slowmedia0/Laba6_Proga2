@@ -106,33 +106,40 @@ public class RequestHandler {
 
     private static Response handleExit(CommandRequest request, Console console, FileManager fileManager) {
         try {
+            ResponseBuilder.clear();
+            ResponseBuilder.append("Сервер завершает работу...");
+
+            // Сохраняем коллекцию в файл
             boolean saved = fileManager.writeCollection();
 
-            String message = saved
-                    ? "Коллекция успешно сохранена на сервере. До свидания!"
-                    : "Коллекция сохранена с ошибками.";
+            // Сортируем перед отправкой
+            console.sortCollectionIfNeeded("exit");
 
-            byte[] fileData = null;
-            String fileName = console.getLoadFileName();
+            // Получаем байты файла (после сохранения!)
+            byte[] fileData = fileManager.getCollectionAsBytes();
 
-            if (fileName != null) {
-                try {
-                    fileData = fileManager.getCollectionAsBytes();
-                } catch (Exception ignored) {}
+            if (saved) {
+                ResponseBuilder.append("Коллекция успешно сохранена.");
+            } else {
+                ResponseBuilder.appendError("Не удалось сохранить коллекцию в файл!");
             }
 
             Response response = new Response(
-                    saved ? ExitCodeCommand.EXIT : ExitCodeCommand.ERROR,
-                    message,
-                    "exit",
-                    fileName,
-                    fileData
+                    saved ? ExitCodeCommand.OK : ExitCodeCommand.ERROR,
+                    ResponseBuilder.getOutput()
             );
+
+            response.setFileData(fileData);
+            response.setFileName(console.getLoadFileName());
+
+            System.out.println("✅ Exit: подготовлен файл для клиента (" +
+                    (fileData != null ? fileData.length : 0) + " байт)");
 
             return response;
 
         } catch (Exception e) {
-            return new Response(ExitCodeCommand.ERROR, "Ошибка при завершении работы: " + e.getMessage());
+            ResponseBuilder.appendError("Ошибка при завершении работы: " + e.getMessage());
+            return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
         }
     }
 

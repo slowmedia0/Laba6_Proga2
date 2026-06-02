@@ -456,23 +456,26 @@ public class UserHandler {
     }
 
     public void handleExitResponse(Response response) {
-        if (response != null) {
-            if (response.getMessage() != null && !response.getMessage().isEmpty()) {
-                System.out.println(response.getMessage());
-            }
+        if (response == null) {
+            System.out.println("Сервер не вернул ответ при выходе.");
+            udpClient.close();
+            System.exit(0);
+            return;
+        }
 
-            if (response.getFileData() != null && response.getFileName() != null) {
-                try {
-                    byte[] bytes = response.getFileData();
-                    Files.write(new File(loadFileName).toPath(), bytes);
-                    System.out.println("✅ Файл успешно сохранён на клиенте: " + response.getFileName()
-                            + " (" + bytes.length + " байт)");
-                } catch (IOException e) {
-                    System.out.println("❌ Не удалось сохранить файл: " + e.getMessage());
-                }
+        System.out.println(response.getMessage());
+
+        // Сохранение файла
+        if (response.getFileData() != null && response.getFileData().length > 0 && loadFileName != null) {
+            try {
+                Files.write(new File(loadFileName).toPath(), response.getFileData());
+                System.out.println("✅ Файл коллекции успешно обновлён: " + loadFileName
+                        + " (" + response.getFileData().length + " байт)");
+            } catch (IOException e) {
+                System.err.println("❌ Не удалось сохранить файл на клиенте: " + e.getMessage());
             }
         } else {
-            System.out.println("Сервер не ответил при выходе.");
+            System.out.println("⚠️ Сервер не отправил данные файла (fileData пустой).");
         }
 
         System.out.println("Клиент завершает работу.");
@@ -480,6 +483,5 @@ public class UserHandler {
         ExitCodeCommandStatus = ExitCodeCommand.EXIT;
         System.exit(0);
     }
-
 
 }

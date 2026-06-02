@@ -6,8 +6,6 @@ import common.interaction.Response;
 import common.utility.Serializer;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -19,46 +17,57 @@ public class UDPClient {
 
     private final DatagramChannel channel;
     private final Selector selector;
-    private final InetSocketAddress serverAddress;
+    private final SocketAddress serverAddress;
 
-    private static final int BUFFER_SIZE = 524288;
-    private static final int TIMEOUT_MS = 15000;
+    private static final int BUFFER_SIZE = 1048576; // 1 MB
+    private static final int TIMEOUT_MS = 30000;    // 30 секунд
 
     public UDPClient(String host, int port) throws IOException {
         this.serverAddress = new InetSocketAddress(host, port);
 
         this.channel = DatagramChannel.open();
-        this.channel.configureBlocking(false);
+        this.channel.configureBlocking(false);           // Требование ТЗ
 
         this.selector = Selector.open();
         this.channel.register(selector, SelectionKey.OP_READ);
 
-        System.out.println("Клиент готов к работе | Сервер: " + host + ":" + port);
+        System.out.println("✅ Клиент запущен (DatagramChannel + Selector, неблокирующий)");
     }
 
-    // Временно замени sendRequest на этот метод (для диагностики)
     public Response sendRequest(CommandRequest command) {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.setSoTimeout(10000);
-
+        try {
             byte[] data = Serializer.serialize(command);
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, serverAddress);
-            socket.send(sendPacket);
+            ByteBuffer sendBuffer = ByteBuffer.wrap(data);
+            channel.send(sendBuffer, serverAddress);
 
             System.out.println("→ Отправлена: " + command.getNameOfCommand());
 
-            byte[] buffer = new byte[BUFFER_SIZE];
-            DatagramPacket recvPacket = new DatagramPacket(buffer, buffer.length);
-            socket.receive(recvPacket);
+            // Улучшенная обработка Selector
+            long deadline = System.currentTimeMillis() + TIMEOUT_MS;
 
-            System.out.println("← Получено " + recvPacket.getLength() + " байт");
+            while (System.currentTimeMillis() < deadline) {
+                if (selector.select(2000) > 0) {   // проверяем каждые 2 секунды
+                    ByteBuffer responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
+                    SocketAddress sender = channel.receive(responseBuffer);
 
-            Response response = Serializer.deserialize(recvPacket.getData());
+                    if (sender != null) {
+                        responseBuffer.flip();
+                        byte[] responseBytes = new byte[responseBuffer.remaining()];
+                        responseBuffer.get(responseBytes);
 
-            return response;
+                        System.out.println("← Получено " + responseBytes.length + " байт от сервера");
+
+                        Response response = Serializer.deserialize(responseBytes);
+                        return response;
+                    }
+                }
+            }
+
+            return new Response(ExitCodeCommand.ERROR, "Сервер не отвечает (таймаут " + TIMEOUT_MS + "мс)");
+
         } catch (Exception e) {
             e.printStackTrace();
-            return new Response(ExitCodeCommand.ERROR, "Ошибка: " + e.getMessage());
+            return new Response(ExitCodeCommand.ERROR, "Ошибка связи: " + e.getMessage());
         }
     }
 
@@ -66,8 +75,9 @@ public class UDPClient {
         try {
             selector.close();
             channel.close();
+            System.out.println("Клиент завершает работу.");
         } catch (IOException e) {
-            System.err.println("Ошибка закрытия клиента: " + e.getMessage());
+            System.err.println("Ошибка при закрытии клиента: " + e.getMessage());
         }
     }
 }

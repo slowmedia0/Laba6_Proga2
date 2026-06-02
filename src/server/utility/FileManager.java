@@ -16,6 +16,7 @@ import common.models.VehicleType;
 
 import javax.xml.parsers.*;
 import java.io.*;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -220,13 +221,20 @@ public class FileManager {
         }
     }
 
+    /**
+     * Возвращает байты актуального файла коллекции для отправки клиенту
+     */
     public byte[] getCollectionAsBytes() {
         try {
-            return Serializer.serialize(collectionManager.getCollection());
+            writeCollection(); // обязательно сохраняем перед чтением
+
+            if (loadFile != null && loadFile.exists()) {
+                return Files.readAllBytes(loadFile.toPath());
+            }
         } catch (Exception e) {
-            ResponseBuilder.appendLn("Ошибка сериализации коллекции: " + e.getMessage());
-            return new byte[0];
+            System.err.println("Ошибка чтения файла для отправки: " + e.getMessage());
         }
+        return new byte[0];
     }
 
     public void loadFromBytes(byte[] data) {
