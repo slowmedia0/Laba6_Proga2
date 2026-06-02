@@ -2,6 +2,8 @@ package common.commands;
 
 import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
+import server.utility.ResponseBuilder;
+
 import java.util.List;
 
 public class HelpCommand extends AbstractCommand{
@@ -37,7 +39,7 @@ public class HelpCommand extends AbstractCommand{
             return valid;
         }
         for (int i=0;i<commands.size();i++){
-            System.out.println(commands.get(i).getNameOfCommand() + " : " + commands.get(i).getDescriptionOfCommand());
+            ResponseBuilder.append(commands.get(i).getNameOfCommand() + " : " + commands.get(i).getDescriptionOfCommand());
         }
         return ExitCodeCommand.OK;
     }

@@ -46,6 +46,7 @@ public class App {
         try (Scanner scanner = new Scanner(System.in)) {
 
             UDPClient udpClient = new UDPClient(host, port);
+            udpClient.connect();
             FileManagerClient fileManagerClient = new FileManagerClient();
 
             UserHandler userHandler = new UserHandler(udpClient, scanner,fileManagerClient);
@@ -68,9 +69,6 @@ public class App {
                 System.out.println("Завершение программы");
             }));
 
-        } catch (IOException e) {
-            System.err.println("Не удалось подключиться к серверу " + host + ":" + port);
-            System.err.println("Ошибка: " + e.getMessage());
         } catch (Exception e) {
             System.err.println("Критическая ошибка в клиенте:");
             e.printStackTrace();

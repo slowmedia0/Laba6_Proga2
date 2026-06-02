@@ -1,116 +1,174 @@
 package client;
 
-import common.ExitCodeCommand;
 import common.commands.CommandRequest;
-import common.interaction.ChunkedResponse;
 import common.interaction.Response;
 import common.utility.Serializer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Iterator;
 
 public class UDPClient {
 
-    private final DatagramChannel channel;
-    private final Selector selector;
-    private final SocketAddress serverAddress;
+    private final String host;
+    private final int port;
+    private DatagramChannel channel;
+    private Selector selector;
 
-    private static final int BUFFER_SIZE = 262144; // 256 KB
-    private static final int TIMEOUT_MS = 60000;
+    private static final int BUFFER_SIZE = 8192;        // размер одного чанка
+    private static final int TIMEOUT_MS = 8000;         // увеличил таймаут
+    private static final byte[] END_MARKER = {0x0A, 0x0B, 0x0C, 0x0D}; // маркер конца
 
-    public UDPClient(String host, int port) throws IOException {
-        this.serverAddress = new java.net.InetSocketAddress(host, port);
-
-        this.channel = DatagramChannel.open();
-        this.channel.configureBlocking(false);
-
-        this.selector = Selector.open();
-        this.channel.register(selector, SelectionKey.OP_READ);
-
-        System.out.println("✅ Клиент запущен (Неблокирующий режим + Selector)");
+    public UDPClient(String host, int port) {
+        this.host = host;
+        this.port = port;
     }
 
-    public Response sendRequest(CommandRequest command) {
-        if (command == null) {
-            return new Response(ExitCodeCommand.ERROR, "Пустой запрос");
+    public void connect() throws IOException {
+        channel = DatagramChannel.open();
+        channel.configureBlocking(false);
+        channel.connect(new InetSocketAddress(host, port));
+
+        selector = Selector.open();
+        channel.register(selector, SelectionKey.OP_READ);
+
+        System.out.println("Клиент подключён к " + host + ":" + port);
+    }
+
+    /**
+     * Отправка запроса с поддержкой чанкирования
+     */
+    public Response sendRequest(CommandRequest request) {
+        try {
+            byte[] data = Serializer.serialize(request);
+
+            if (data.length + END_MARKER.length < BUFFER_SIZE - 200) {
+                System.out.println("→ Отправлена команда: " + request.getNameOfCommand()
+                        + " (" + data.length + " байт)");
+                return sendSinglePacket(data);
+            } else {
+                System.out.println("→ Отправка большого сообщения: " + request.getNameOfCommand()
+                        + " (" + data.length + " байт)");
+                return sendWithChunks(data);
+            }
+        } catch (Exception e) {
+            System.out.println("   Ошибка при отправке запроса: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private Response sendSinglePacket(byte[] data) throws IOException {
+        ByteBuffer buffer = ByteBuffer.wrap(data);
+        channel.write(buffer);
+
+        System.out.println("→ Отправлена команда: " + /*request.getNameOfCommand()*/ "(одним пакетом, " + data.length + " байт)");
+
+        return receiveResponse();
+    }
+
+    private Response sendWithChunks(byte[] data) throws IOException {
+        int totalChunks = (data.length + BUFFER_SIZE - 1) / BUFFER_SIZE;
+        System.out.println("→ Отправка большого сообщения (" + data.length + " байт) в " + totalChunks + " чанках");
+
+        for (int i = 0; i < totalChunks; i++) {
+            int offset = i * BUFFER_SIZE;
+            int length = Math.min(BUFFER_SIZE, data.length - offset);
+
+            ByteBuffer chunk = ByteBuffer.allocate(length + 4);
+            chunk.putInt(i);                    // номер чанка
+            chunk.put(data, offset, length);
+            chunk.flip();
+
+            channel.write(chunk);
         }
 
-        try {
-            byte[] data = Serializer.serialize(command);
-            channel.send(ByteBuffer.wrap(data), serverAddress);
+        // Отправляем маркер конца
+        ByteBuffer endBuffer = ByteBuffer.wrap(END_MARKER);
+        channel.write(endBuffer);
 
-            System.out.println("→ Отправлена: " + command.getNameOfCommand() + " (" + data.length + " байт)");
+        return receiveResponse();
+    }
 
-            Map<Integer, byte[]> chunks = new HashMap<>();
-            int totalChunks = -1;
-            long startTime = System.currentTimeMillis();
+    /**
+     * Получение ответа (с поддержкой чанков)
+     */
+    /**
+     * Получение ответа (с поддержкой чанков)
+     */
+    private Response receiveResponse() throws IOException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        long startTime = System.currentTimeMillis();
 
-            while (System.currentTimeMillis() - startTime < TIMEOUT_MS) {
+        while (System.currentTimeMillis() - startTime < TIMEOUT_MS) {
+            if (selector.select(500) == 0) {
+                continue;
+            }
 
-                if (selector.select(2500) > 0) {
+            Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
+            while (iterator.hasNext()) {
+                SelectionKey key = iterator.next();
+                iterator.remove();
 
+                if (key.isReadable()) {
                     ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-                    SocketAddress from = channel.receive(buffer);
+                    SocketAddress addr = channel.receive(buffer);
 
-                    if (from != null) {
+                    if (addr != null) {
                         buffer.flip();
-                        byte[] packet = new byte[buffer.remaining()];
-                        buffer.get(packet);
+                        byte[] received = new byte[buffer.remaining()];
+                        buffer.get(received);
 
-                        System.out.println("   ← Получен пакет (" + packet.length + " байт)");
-
-                        try {
-                            Object obj = Serializer.deserialize(packet);
-
-                            if (obj instanceof Response) {
-                                System.out.println("   УСПЕХ: получен Response");
-                                return (Response) obj;
-                            }
-                            else if (obj instanceof ChunkedResponse) {
-                                ChunkedResponse cr = (ChunkedResponse) obj;
-                                chunks.put(cr.getChunkIndex(), cr.getData());
-                                if (totalChunks == -1) totalChunks = cr.getTotalChunks();
-
-                                System.out.println("   Чанк " + (cr.getChunkIndex() + 1) + "/" + totalChunks);
-
-                                if (chunks.size() == totalChunks) {
-                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                    for (int i = 0; i < totalChunks; i++) {
-                                        baos.write(chunks.get(i));
-                                    }
-                                    Response response = Serializer.deserialize(baos.toByteArray());
-                                    System.out.println("   УСПЕХ: ответ собран (" + baos.size() + " байт)");
-                                    return response;
-                                }
-                            }
-                        } catch (Exception e) {
-                            System.out.println("   Ошибка десериализации: " + e.getMessage());
+                        // Проверка маркера конца передачи
+                        if (received.length == END_MARKER.length &&
+                                java.util.Arrays.equals(received, END_MARKER)) {
+                            break;
                         }
+
+                        baos.write(received);
                     }
                 }
             }
+        }
 
-            return new Response(ExitCodeCommand.ERROR, "Сервер не ответил (таймаут)");
+        byte[] fullData = baos.toByteArray();
 
+        if (fullData.length == 0) {
+            System.out.println("   Таймаут: сервер не ответил");
+            return null;
+        }
+
+        // === ИСПРАВЛЕННАЯ ДЕСЕРИАЛИЗАЦИЯ ===
+        try {
+            Object deserialized = Serializer.deserialize(fullData);
+
+            if (deserialized instanceof Response) {
+                return (Response) deserialized;
+            } else if (deserialized == null) {
+                System.out.println("   Ошибка: получен null вместо Response");
+                return null;
+            } else {
+                System.out.println("   Ошибка: получен объект неверного типа: "
+                        + deserialized.getClass().getName());
+                return null;
+            }
         } catch (Exception e) {
-            e.printStackTrace();
-            return new Response(ExitCodeCommand.ERROR, "Ошибка соединения: " + e.getMessage());
+            System.out.println("   Ошибка десериализации ответа: " + e.getMessage());
+            return null;
         }
     }
 
     public void close() {
         try {
-            selector.close();
-            channel.close();
+            if (channel != null) channel.close();
+            if (selector != null) selector.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Ошибка закрытия клиента: " + e.getMessage());
         }
     }
 }
