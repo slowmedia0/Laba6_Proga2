@@ -2,16 +2,19 @@ package client;
 
 import common.ExitCodeCommand;
 import common.commands.CommandRequest;
+import common.interaction.ChunkedResponse;
 import common.interaction.Response;
 import common.utility.Serializer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.HashMap;
+import java.util.Map;
 
 public class UDPClient {
 
@@ -19,55 +22,86 @@ public class UDPClient {
     private final Selector selector;
     private final SocketAddress serverAddress;
 
-    private static final int BUFFER_SIZE = 1048576; // 1 MB
-    private static final int TIMEOUT_MS = 30000;    // 30 секунд
+    private static final int BUFFER_SIZE = 262144; // 256 KB
+    private static final int TIMEOUT_MS = 60000;
 
     public UDPClient(String host, int port) throws IOException {
-        this.serverAddress = new InetSocketAddress(host, port);
+        this.serverAddress = new java.net.InetSocketAddress(host, port);
 
         this.channel = DatagramChannel.open();
-        this.channel.configureBlocking(false);           // Требование ТЗ
+        this.channel.configureBlocking(false);
 
         this.selector = Selector.open();
         this.channel.register(selector, SelectionKey.OP_READ);
 
-        System.out.println("✅ Клиент запущен (DatagramChannel + Selector, неблокирующий)");
+        System.out.println("✅ Клиент запущен (Неблокирующий режим + Selector)");
     }
 
     public Response sendRequest(CommandRequest command) {
+        if (command == null) {
+            return new Response(ExitCodeCommand.ERROR, "Пустой запрос");
+        }
+
         try {
             byte[] data = Serializer.serialize(command);
-            ByteBuffer sendBuffer = ByteBuffer.wrap(data);
-            channel.send(sendBuffer, serverAddress);
+            channel.send(ByteBuffer.wrap(data), serverAddress);
 
-            System.out.println("→ Отправлена: " + command.getNameOfCommand());
+            System.out.println("→ Отправлена: " + command.getNameOfCommand() + " (" + data.length + " байт)");
 
-            // Улучшенная обработка Selector
-            long deadline = System.currentTimeMillis() + TIMEOUT_MS;
+            Map<Integer, byte[]> chunks = new HashMap<>();
+            int totalChunks = -1;
+            long startTime = System.currentTimeMillis();
 
-            while (System.currentTimeMillis() < deadline) {
-                if (selector.select(2000) > 0) {   // проверяем каждые 2 секунды
-                    ByteBuffer responseBuffer = ByteBuffer.allocate(BUFFER_SIZE);
-                    SocketAddress sender = channel.receive(responseBuffer);
+            while (System.currentTimeMillis() - startTime < TIMEOUT_MS) {
 
-                    if (sender != null) {
-                        responseBuffer.flip();
-                        byte[] responseBytes = new byte[responseBuffer.remaining()];
-                        responseBuffer.get(responseBytes);
+                if (selector.select(2500) > 0) {
 
-                        System.out.println("← Получено " + responseBytes.length + " байт от сервера");
+                    ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
+                    SocketAddress from = channel.receive(buffer);
 
-                        Response response = Serializer.deserialize(responseBytes);
-                        return response;
+                    if (from != null) {
+                        buffer.flip();
+                        byte[] packet = new byte[buffer.remaining()];
+                        buffer.get(packet);
+
+                        System.out.println("   ← Получен пакет (" + packet.length + " байт)");
+
+                        try {
+                            Object obj = Serializer.deserialize(packet);
+
+                            if (obj instanceof Response) {
+                                System.out.println("   УСПЕХ: получен Response");
+                                return (Response) obj;
+                            }
+                            else if (obj instanceof ChunkedResponse) {
+                                ChunkedResponse cr = (ChunkedResponse) obj;
+                                chunks.put(cr.getChunkIndex(), cr.getData());
+                                if (totalChunks == -1) totalChunks = cr.getTotalChunks();
+
+                                System.out.println("   Чанк " + (cr.getChunkIndex() + 1) + "/" + totalChunks);
+
+                                if (chunks.size() == totalChunks) {
+                                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                    for (int i = 0; i < totalChunks; i++) {
+                                        baos.write(chunks.get(i));
+                                    }
+                                    Response response = Serializer.deserialize(baos.toByteArray());
+                                    System.out.println("   УСПЕХ: ответ собран (" + baos.size() + " байт)");
+                                    return response;
+                                }
+                            }
+                        } catch (Exception e) {
+                            System.out.println("   Ошибка десериализации: " + e.getMessage());
+                        }
                     }
                 }
             }
 
-            return new Response(ExitCodeCommand.ERROR, "Сервер не отвечает (таймаут " + TIMEOUT_MS + "мс)");
+            return new Response(ExitCodeCommand.ERROR, "Сервер не ответил (таймаут)");
 
         } catch (Exception e) {
             e.printStackTrace();
-            return new Response(ExitCodeCommand.ERROR, "Ошибка связи: " + e.getMessage());
+            return new Response(ExitCodeCommand.ERROR, "Ошибка соединения: " + e.getMessage());
         }
     }
 
@@ -75,9 +109,8 @@ public class UDPClient {
         try {
             selector.close();
             channel.close();
-            System.out.println("Клиент завершает работу.");
         } catch (IOException e) {
-            System.err.println("Ошибка при закрытии клиента: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

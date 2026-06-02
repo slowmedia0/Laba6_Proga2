@@ -1,34 +1,48 @@
 package server.utility;
 
+import common.interaction.ChunkedResponse;
 import common.interaction.Response;
 import common.utility.Serializer;
 
-import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 
 public class ResponseSender {
 
-    private static final int BUFFER_SIZE = 524288; // 512 KB
+    private static final int MAX_UDP_SIZE = 65000;
+    private static final int CHUNK_SIZE = 6500;
 
     public static void sendResponse(DatagramChannel channel, SocketAddress clientAddress, Response response) {
-        if (clientAddress == null || response == null) {
-            System.err.println("ResponseSender: null address or response");
-            return;
-        }
-
         try {
+            Thread.sleep(15); // критически важная задержка
+
             byte[] data = Serializer.serialize(response);
-            System.out.println("Сериализовано " + data.length + " байт для отправки");
 
-            ByteBuffer buffer = ByteBuffer.wrap(data);
-            int sent = channel.send(buffer, clientAddress);
+            if (data.length <= MAX_UDP_SIZE) {
+                channel.send(ByteBuffer.wrap(data), clientAddress);
+                System.out.println("Отправлен ответ (" + data.length + " байт)");
+            } else {
+                int totalChunks = (data.length + CHUNK_SIZE - 1) / CHUNK_SIZE;
 
-            System.out.println("ОТПРАВЛЕНО клиенту! (" + sent + " байт)");
+                for (int i = 0; i < totalChunks; i++) {
+                    int offset = i * CHUNK_SIZE;
+                    int length = Math.min(CHUNK_SIZE, data.length - offset);
+
+                    byte[] chunkData = new byte[length];
+                    System.arraycopy(data, offset, chunkData, 0, length);
+
+                    ChunkedResponse chunk = new ChunkedResponse(totalChunks, i, chunkData);
+                    byte[] serialized = Serializer.serialize(chunk);
+
+                    channel.send(ByteBuffer.wrap(serialized), clientAddress);
+                    Thread.sleep(5);
+                }
+                System.out.println("Отправлено " + totalChunks + " чанков (" + data.length + " байт)");
+            }
 
         } catch (Exception e) {
-            System.err.println("Ошибка отправки: " + e.getMessage());
+            System.err.println("Ошибка отправки ответа: " + e.getMessage());
             e.printStackTrace();
         }
     }
