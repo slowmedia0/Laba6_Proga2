@@ -41,8 +41,6 @@ public class FileManager {
         this.collectionManager = collectionManager;
     }
 
-
-
     public Stack<Vehicle> readCollection(File loadFile) throws IOException, ParserConfigurationException, SAXException {
         Stack<Vehicle> C = new Stack<>();
         HashSet<String> setOfId = new HashSet<>();
@@ -155,20 +153,9 @@ public class FileManager {
     }
 
     public boolean writeCollection() {
-        if (collectionManager == null) {
-            ResponseBuilder.appendLn("CollectionManager не инициализирован!");
-            return false;
-        }
-
+        ResponseBuilder.clear();
         Stack<Vehicle> C = collectionManager.getCollection();
         File file = this.loadFile;
-
-        // ←←← Минимальное исправление
-        if (file == null) {
-            ResponseBuilder.appendLn("Файл не задан! Используется файл по умолчанию.");
-            file = new File("collection.xml");  // fallback
-            this.loadFile = file;
-        }
 
         StringBuilder xml = new StringBuilder();
         xml.append("<collection>\n");
@@ -213,6 +200,7 @@ public class FileManager {
             return false;
         }
     }
+
     public ArrayList<String> readScript(File fileScript) {
         ResponseBuilder.clear();
         ArrayList<String> commands = new ArrayList<>();

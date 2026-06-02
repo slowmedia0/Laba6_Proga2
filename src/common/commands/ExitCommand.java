@@ -11,7 +11,7 @@ public class ExitCommand extends AbstractCommand{
     private UserHandler userHandler;
     private String argument;
     private  String FileName;
-    private  String FileData;
+    private  byte[] FileData;
 
 
     //Для метода createCommand из UserHandler
@@ -63,17 +63,14 @@ public class ExitCommand extends AbstractCommand{
                 }
 
                 // Подготавливаем ответ для клиента
-                byte[] rawFileData = fileManager.getCollectionAsBytes();
+                byte[] fileData = fileManager.getCollectionAsBytes();
                 String fileName = fileManager.getLoadFile().getName();
 
-                String fileDataBase64 = null;
-                if (rawFileData != null) {
-                    fileDataBase64 = java.util.Base64.getEncoder().encodeToString(rawFileData);
-                }
-
                 Response customResponse = new Response(ExitCodeCommand.EXIT,
-                        "Клиент успешно отключён.\nКоллекция сохранена на сервере.",
-                        "exit", fileName, fileDataBase64);
+                        "Клиент успешно отключён.\nКоллекция сохранена на сервере.");
+
+                customResponse.setFileData(fileData);
+                customResponse.setFileName(fileName);
 
                 return ExitCodeCommand.EXIT;
 

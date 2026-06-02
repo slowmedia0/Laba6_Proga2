@@ -9,7 +9,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.Selector;
-import java.util.Base64;
 
 /**
  * Модуль обработки полученных команд
@@ -93,7 +92,6 @@ public class RequestHandler {
 
             if (result == ExitCodeCommand.OK) {
                 ResponseBuilder.append("Файл успешно загружен и коллекция обновлена.");
-
             } else {
                 ResponseBuilder.appendLn("Не удалось загрузить файл.");
             }
@@ -112,27 +110,28 @@ public class RequestHandler {
 
             String message = saved
                     ? "Коллекция успешно сохранена на сервере. До свидания!"
-                    : "Ошибка сохранения коллекции.";
+                    : "Коллекция сохранена с ошибками.";
 
+            byte[] fileData = null;
             String fileName = console.getLoadFileName();
-            String fileDataBase64 = null;
 
             if (fileName != null) {
                 try {
-                    byte[] rawData = fileManager.getCollectionAsBytes();
-                    if (rawData != null && rawData.length > 0) {
-                        fileDataBase64 = Base64.getEncoder().encodeToString(rawData);
-                        System.out.println("Файл подготовлен: " + rawData.length + " байт");
-                    }
-                } catch (Exception e) {
-                    System.err.println("Ошибка подготовки файла: " + e.getMessage());
-                }
+                    fileData = fileManager.getCollectionAsBytes();
+                } catch (Exception ignored) {}
             }
 
-            return new Response(ExitCodeCommand.EXIT, message, "exit", fileName, fileDataBase64);
+            Response response = new Response(
+                    saved ? ExitCodeCommand.EXIT : ExitCodeCommand.ERROR,
+                    message,
+                    "exit",
+                    fileName,
+                    fileData
+            );
+
+            return response;
 
         } catch (Exception e) {
-            e.printStackTrace();
             return new Response(ExitCodeCommand.ERROR, "Ошибка при завершении работы: " + e.getMessage());
         }
     }

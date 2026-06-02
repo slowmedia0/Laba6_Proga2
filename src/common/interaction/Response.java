@@ -3,7 +3,6 @@ package common.interaction;
 import common.ExitCodeCommand;
 
 import java.io.Serializable;
-import java.util.Base64;
 
 public class Response implements Serializable {
 
@@ -12,8 +11,8 @@ public class Response implements Serializable {
     private final ExitCodeCommand status;
     private final String message;
     private final String commandName;
-    private final String fileName;
-    private final String fileData;   // ← теперь String (Base64)
+    private  String fileName;
+    private  byte[] fileData;
 
     public Response(ExitCodeCommand status, String message) {
         this(status, message, null, null, null);
@@ -23,30 +22,33 @@ public class Response implements Serializable {
         this(status, message, commandName, null, null);
     }
 
-    public Response(ExitCodeCommand status, String message, String fileName, String fileData) {
+    public Response(ExitCodeCommand status, String message, String fileName, byte[] fileData) {
         this(status, message, null, fileName, fileData);
     }
 
-    public Response(ExitCodeCommand status, String message, String commandName,
-                    String fileName, String fileData) {
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData;
+    }
+
+    public Response(ExitCodeCommand status, String message, String commandName, String fileName, byte[] fileData) {
         this.status = status;
-        this.message = message != null ? message : "";
+        this.message = message;
         this.commandName = commandName;
         this.fileName = fileName;
         this.fileData = fileData;
     }
 
+
+
     public ExitCodeCommand getStatus() { return status; }
     public String getMessage() { return message; }
     public String getCommandName() { return commandName; }
     public String getFileName() { return fileName; }
-    public String getFileData() { return fileData; }
-
-    // Удобный метод для получения байтов
-    public byte[] getFileDataAsBytes() {
-        if (fileData == null || fileData.isEmpty()) return null;
-        return Base64.getDecoder().decode(fileData);
-    }
+    public byte[] getFileData() { return fileData; }
 
     public boolean isSuccess() {
         return status == ExitCodeCommand.OK || status == ExitCodeCommand.EXIT;

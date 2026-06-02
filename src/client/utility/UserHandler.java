@@ -457,19 +457,22 @@ public class UserHandler {
 
     public void handleExitResponse(Response response) {
         if (response != null) {
-            if (response.getMessage() != null) {
+            if (response.getMessage() != null && !response.getMessage().isEmpty()) {
                 System.out.println(response.getMessage());
             }
 
             if (response.getFileData() != null && response.getFileName() != null) {
                 try {
-                    byte[] bytes = Base64.getDecoder().decode(response.getFileData());
+                    byte[] bytes = response.getFileData();
                     Files.write(new File(loadFileName).toPath(), bytes);
-                    System.out.println("✅ Файл успешно сохранён (" + bytes.length + " байт)");
-                } catch (Exception e) {
-                    System.out.println("❌ Ошибка сохранения файла: " + e.getMessage());
+                    System.out.println("✅ Файл успешно сохранён на клиенте: " + response.getFileName()
+                            + " (" + bytes.length + " байт)");
+                } catch (IOException e) {
+                    System.out.println("❌ Не удалось сохранить файл: " + e.getMessage());
                 }
             }
+        } else {
+            System.out.println("Сервер не ответил при выходе.");
         }
 
         System.out.println("Клиент завершает работу.");
