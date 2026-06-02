@@ -33,6 +33,7 @@ public class ExecuteScriptCommand extends AbstractCommand{
             System.err.println("Ошибка чтения скрипта-файла: " + e.getMessage());
             this.FileData = new byte[0];
         }
+        this.argument=nameOfFile;
     }
 
 

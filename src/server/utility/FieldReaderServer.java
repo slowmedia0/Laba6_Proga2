@@ -37,7 +37,7 @@ public class FieldReaderServer {
 
     private static void printErrorIfNotScript(String message) {
         if (!console.isFlagScript() && !console.isFlagReadCollection()) {
-            ResponseBuilder.appendError(message);
+            ResponseBuilder.appendLn(message);
         }
     }
 

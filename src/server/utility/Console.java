@@ -79,7 +79,6 @@ public class Console {
 
             // Чтение коллекции
             collectionManager.setCollection(fileManager.readCollection(loadFile));
-
             // Инициализация вспомогательных структур
             collectionManager.initializeArrayId();
             collectionManager.setCreationDate(java.time.LocalDate.now());
@@ -89,8 +88,8 @@ public class Console {
             ResponseBuilder.append("Коллекция успешно загружена. Количество элементов: " + size);
 
         } catch (Exception e) {
-            ResponseBuilder.appendError("КРИТИЧЕСКАЯ ОШИБКА при загрузке коллекции из файла " + loadFile.getName());
-            ResponseBuilder.appendError("Ошибка: " + e.getMessage());
+            ResponseBuilder.appendLn("КРИТИЧЕСКАЯ ОШИБКА при загрузке коллекции из файла " + loadFile.getName());
+            ResponseBuilder.appendLn("Ошибка: " + e.getMessage());
             throw e;
         } finally {
             flagReadCollection = false;
@@ -108,14 +107,13 @@ public class Console {
             this.loadFileData = fileData;
             File tempFile = new File(fileName);
             Files.write(tempFile.toPath(), fileData);
-
             loadCollection(tempFile);
 
             ResponseBuilder.append("Коллекция успешно загружена из данных клиента.");
             return ExitCodeCommand.OK;
 
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка загрузки коллекции из байтов: " + e.getMessage());
+            ResponseBuilder.appendLn("Ошибка загрузки коллекции из байтов: " + e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }
@@ -178,7 +176,7 @@ public class Console {
                     throw new CommandNotExist("Команда " + mnemonics + " не существует!");
             }
         } catch (CommandNotExist e) {
-            ResponseBuilder.appendError(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             exitCodeStatus = ExitCodeCommand.ERROR;
             return exitCodeStatus;
         }
@@ -237,7 +235,7 @@ public class Console {
                     throw new CommandNotExist("Команда " + mnemonics + " не существует!");
             }
         } catch (CommandNotExist e) {
-            ResponseBuilder.appendError(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             exitCodeStatus = ExitCodeCommand.ERROR;
             return exitCodeStatus;
         }

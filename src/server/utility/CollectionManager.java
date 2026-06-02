@@ -158,7 +158,7 @@ public class CollectionManager {
                 return C;
             }
         }
-        ResponseBuilder.appendError("Элемент с ID " + id + " не найден.");
+        ResponseBuilder.appendLn("Элемент с ID " + id + " не найден.");
         throw new NoSuchElementException("Элемент с ID " + id + " не найден!");
     }
 

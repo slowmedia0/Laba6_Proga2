@@ -53,7 +53,6 @@ public class App {
             // Настройка FieldReaderClient
             FieldReaderClient.setUserHandler(userHandler);
 
-            System.out.println("Клиент готов к работе.\n");
 
             // Запуск интерактивного режима
             userHandler.interactiveMode(filename);
@@ -62,8 +61,10 @@ public class App {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 if (userHandler.getExitCodeCommandStatus().equals(ExitCodeCommand.CTRL_C)) {
                     System.out.println();
+                    System.out.println();
                     System.out.println("Вы использовали Ctrl+C.");
                 }
+                userHandler.handleExitResponse(udpClient.sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
                 System.out.println("Завершение программы");
             }));
 

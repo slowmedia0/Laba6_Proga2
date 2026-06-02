@@ -1,73 +1,54 @@
 package common.interaction;
 
 import common.ExitCodeCommand;
-import common.models.Vehicle;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Base64;
 
-/**
- * Класс ответа от сервера клиенту
- */
 public class Response implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
-    private ExitCodeCommand exitCode;
-    private String message;
-    private String fileName;
-    private byte[] fileData;
+    private final ExitCodeCommand status;
+    private final String message;
+    private final String commandName;
+    private final String fileName;
+    private final String fileData;   // ← теперь String (Base64)
 
-    // ==================== Конструкторы ====================
-
-    public Response(ExitCodeCommand exitCode, String message) {
-        this.exitCode = exitCode;
-        this.message = message;
+    public Response(ExitCodeCommand status, String message) {
+        this(status, message, null, null, null);
     }
 
-    public Response(ExitCodeCommand exitCode, String message, String fileName, byte[] fileData) {
-        this.exitCode = exitCode;
-        this.message = message;
+    public Response(ExitCodeCommand status, String message, String commandName) {
+        this(status, message, commandName, null, null);
+    }
+
+    public Response(ExitCodeCommand status, String message, String fileName, String fileData) {
+        this(status, message, null, fileName, fileData);
+    }
+
+    public Response(ExitCodeCommand status, String message, String commandName,
+                    String fileName, String fileData) {
+        this.status = status;
+        this.message = message != null ? message : "";
+        this.commandName = commandName;
         this.fileName = fileName;
         this.fileData = fileData;
     }
 
-    public Response(String message) {
-        this(ExitCodeCommand.OK, message);
-    }
+    public ExitCodeCommand getStatus() { return status; }
+    public String getMessage() { return message; }
+    public String getCommandName() { return commandName; }
+    public String getFileName() { return fileName; }
+    public String getFileData() { return fileData; }
 
-    // ==================== Геттеры и Сеттеры ====================
-
-    public ExitCodeCommand getExitCode() {
-        return exitCode;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public byte[] getFileData() {
-        return fileData;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
-    }
-
-    public void setFileData(byte[] fileData) {
-        this.fileData = fileData;
+    // Удобный метод для получения байтов
+    public byte[] getFileDataAsBytes() {
+        if (fileData == null || fileData.isEmpty()) return null;
+        return Base64.getDecoder().decode(fileData);
     }
 
     public boolean isSuccess() {
-        return exitCode == ExitCodeCommand.OK;
+        return status == ExitCodeCommand.OK || status == ExitCodeCommand.EXIT;
     }
-
-    @Override
-    public String toString() {
-        return "Response{exitCode=" + exitCode + ", message='" + message + "'}";
-    }
-
 }

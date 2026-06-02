@@ -46,6 +46,7 @@ public class FieldReaderClient {
         } catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
             userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
             System.exit(0);
             return null;
         } catch (WrongAmountOfElementsException e) {
@@ -95,6 +96,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
                 System.exit(0);
                 return null;
             }
@@ -230,6 +232,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
                 System.exit(0);
                 return null;
             } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
@@ -348,6 +351,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
                 System.exit(0);
                 return null;
             } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
@@ -513,6 +517,7 @@ public class FieldReaderClient {
             }catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
 
                 System.exit(0);
                 return 0;
@@ -644,6 +649,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
 
                 System.exit(0);
                 return null;
@@ -746,6 +752,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
 
                 System.exit(0);
                 return null;
@@ -835,6 +842,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
 
                 System.exit(0);
                 return null;

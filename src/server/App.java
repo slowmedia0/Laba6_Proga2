@@ -7,6 +7,24 @@ import server.utility.FileManager;
 public class App {
 
     public static void main(String[] args) {
+         /*
+        if (args.length != 1) {
+            System.out.println("Ошибка: необходимо указать один аргумент!");
+            System.out.println("Использование: java -jar client.jar <port>");
+            System.exit(0);
+        }
+
+        int port;
+
+        try {
+            port = Integer.parseInt(args[1].trim());
+        } catch (NumberFormatException e) {
+            System.out.println("Ошибка: порт должен быть целым числом!");
+            System.exit(1);
+            return;
+        }
+         */
+        int port=2222;
 
         try {
             CollectionManager collectionManager = new CollectionManager();
@@ -35,7 +53,7 @@ public class App {
             FieldReaderServer.setConsole(console);
 
 
-            UDPServer server = new UDPServer(console, fileManager);
+            UDPServer server = new UDPServer(console, fileManager,port);
             System.out.println("=== Сервер успешно запущен ===");
             System.out.println("Ожидание подключения клиента...");
 

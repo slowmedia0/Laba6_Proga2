@@ -41,6 +41,8 @@ public class FileManager {
         this.collectionManager = collectionManager;
     }
 
+
+
     public Stack<Vehicle> readCollection(File loadFile) throws IOException, ParserConfigurationException, SAXException {
         Stack<Vehicle> C = new Stack<>();
         HashSet<String> setOfId = new HashSet<>();
@@ -75,11 +77,11 @@ public class FileManager {
             int collectionCount = doc.getElementsByTagName("collection").getLength();
 
             if (collectionCount == 0) {
-                ResponseBuilder.appendError("В файле нет коллекции!");
+                ResponseBuilder.appendLn("В файле нет коллекции!");
                 throw new NoSuchElementException("В файле нет коллекции!");
             }
             if (collectionCount > 1) {
-                ResponseBuilder.appendError("В файле более одной коллекции!");
+                ResponseBuilder.appendLn("В файле более одной коллекции!");
                 throw new NoSuchElementException("В файле более одной коллекции!");
             }
 
@@ -116,10 +118,10 @@ public class FileManager {
                 }
             }
         } catch (FileNotFoundException e) {
-            ResponseBuilder.appendError(e.getMessage() + " : Не удалось найти файл!");
+            ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
             return readCollection(null);
         } catch (NoSuchElementException | SAXException | ParserConfigurationException | IOException ex) {
-            ResponseBuilder.appendError(ex.getMessage());
+            ResponseBuilder.appendLn(ex.getMessage());
             return readCollection(null);
         }
 
@@ -144,18 +146,29 @@ public class FileManager {
 
                 C.add(new Vehicle(id, name, coordinates, creationDate, enginePower, numberOfWheels, type, fuelType));
             } catch (FieldReadException e) {
-                ResponseBuilder.appendError("Не удалось считать объект Vehicle! -> " + e.generateFullMessage());
+                ResponseBuilder.appendLn("Не удалось считать объект Vehicle! -> " + e.generateFullMessage());
             } catch (Exception e) {
-                ResponseBuilder.appendError("Не удалось считать объект Vehicle! -> " + e.getMessage());
+                ResponseBuilder.appendLn("Не удалось считать объект Vehicle! -> " + e.getMessage());
             }
         }
         return C;
     }
 
     public boolean writeCollection() {
-        ResponseBuilder.clear();
+        if (collectionManager == null) {
+            ResponseBuilder.appendLn("CollectionManager не инициализирован!");
+            return false;
+        }
+
         Stack<Vehicle> C = collectionManager.getCollection();
         File file = this.loadFile;
+
+        // ←←← Минимальное исправление
+        if (file == null) {
+            ResponseBuilder.appendLn("Файл не задан! Используется файл по умолчанию.");
+            file = new File("collection.xml");  // fallback
+            this.loadFile = file;
+        }
 
         StringBuilder xml = new StringBuilder();
         xml.append("<collection>\n");
@@ -190,17 +203,16 @@ public class FileManager {
             ResponseBuilder.appendSuccess("Коллекция успешно сохранена в файл");
             return true;
         } catch (FileNotFoundException e) {
-            ResponseBuilder.appendError(e.getMessage() + " : Не удалось найти файл!");
+            ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
             return false;
         } catch (IllegalArgumentException e) {
-            ResponseBuilder.appendError(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return false;
         } catch (IOException e) {
-            ResponseBuilder.appendError(e.getMessage() + " : Непредвиденная ошибка!");
+            ResponseBuilder.appendLn(e.getMessage() + " : Непредвиденная ошибка!");
             return false;
         }
     }
-
     public ArrayList<String> readScript(File fileScript) {
         ResponseBuilder.clear();
         ArrayList<String> commands = new ArrayList<>();
@@ -212,10 +224,10 @@ public class FileManager {
             }
             return commands;
         } catch (FileNotFoundException e) {
-            ResponseBuilder.appendError(e.getMessage() + " : Не удалось найти файл!");
+            ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
             return null;
         } catch (IOException e) {
-            ResponseBuilder.appendError(e.getMessage() + " : Непредвиденная ошибка!");
+            ResponseBuilder.appendLn(e.getMessage() + " : Непредвиденная ошибка!");
             return null;
         }
     }
@@ -224,7 +236,7 @@ public class FileManager {
         try {
             return Serializer.serialize(collectionManager.getCollection());
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка сериализации коллекции: " + e.getMessage());
+            ResponseBuilder.appendLn("Ошибка сериализации коллекции: " + e.getMessage());
             return new byte[0];
         }
     }
@@ -238,7 +250,7 @@ public class FileManager {
             collectionManager.initializeArrayId();
             ResponseBuilder.append("Коллекция успешно загружена из байтов (" + loadedCollection.size() + " элементов)");
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка загрузки коллекции из байтов: " + e.getMessage());
+            ResponseBuilder.appendLn("Ошибка загрузки коллекции из байтов: " + e.getMessage());
         }
     }
 

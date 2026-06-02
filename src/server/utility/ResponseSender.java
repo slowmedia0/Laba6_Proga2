@@ -14,25 +14,21 @@ public class ResponseSender {
 
     public static void sendResponse(DatagramChannel channel, SocketAddress clientAddress, Response response) {
         if (clientAddress == null || response == null) {
-            System.err.println("❌ ResponseSender: null address or response");
+            System.err.println("ResponseSender: null address or response");
             return;
         }
 
         try {
             byte[] data = Serializer.serialize(response);
-
-            System.out.println("📦 Сериализовано " + data.length + " байт для отправки");
+            System.out.println("Сериализовано " + data.length + " байт для отправки");
 
             ByteBuffer buffer = ByteBuffer.wrap(data);
             int sent = channel.send(buffer, clientAddress);
 
-            System.out.println("✅ ОТПРАВЛЕНО клиенту! (" + sent + " байт) | " +
-                    response.getMessage().substring(0, Math.min(80, response.getMessage().length())));
+            System.out.println("ОТПРАВЛЕНО клиенту! (" + sent + " байт)");
 
-        } catch (IOException e) {
-            System.err.println("❌ Ошибка отправки UDP: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("❌ Ошибка сериализации: " + e.getMessage());
+            System.err.println("Ошибка отправки: " + e.getMessage());
             e.printStackTrace();
         }
     }

@@ -9,17 +9,22 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.Selector;
+import java.util.Base64;
 
+/**
+ * Модуль обработки полученных команд
+ */
 public class RequestHandler {
 
     private static final int BUFFER_SIZE = 65536;
 
     /**
-     * Главный метод обработки запроса
+     * Главный метод обработки запроса (сохранена твоя логика)
      */
     public static void handleRequest(DatagramChannel channel, Selector selector,
                                      Console console, FileManager fileManager) {
 
+        ResponseBuilder.clear();
         SocketAddress clientAddress = null;
         try {
             ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -36,7 +41,7 @@ public class RequestHandler {
             System.out.println("← Получена команда: " + request.getNameOfCommand() + " от " + clientAddress);
 
             Response response;
-            String cmd = request.getNameOfCommand();
+            String cmd = request.getNameOfCommand().toLowerCase().trim();
 
             // Очищаем builder перед каждой новой командой
             ResponseBuilder.clear();
@@ -44,19 +49,21 @@ public class RequestHandler {
             if ("load_file".equals(cmd)) {
                 response = handleLoadFile(request, console);
             }
-            else if ("exit".equalsIgnoreCase(cmd)) {
+            else if ("exit".equals(cmd)) {
                 response = handleExit(request, console, fileManager);
             }
             else {
                 response = processCommand(request, console);
             }
 
+
             // Отправляем ответ
             ResponseSender.sendResponse(channel, clientAddress, response);
 
+
         } catch (Exception e) {
             ResponseBuilder.clear();
-            ResponseBuilder.appendError("Критическая ошибка сервера: " + e.getMessage());
+            ResponseBuilder.appendLn("Критическая ошибка сервера: " + e.getMessage());
 
             Response errorResponse = new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
 
@@ -70,7 +77,7 @@ public class RequestHandler {
         }
     }
 
-    // ==================== Обработчики команд ====================
+    // ==================== Обработчики команд (логика сохранена) ====================
 
     private static Response handleLoadFile(CommandRequest request, Console console) {
         try {
@@ -78,7 +85,7 @@ public class RequestHandler {
             byte[] fileData = request.getFileData();
 
             if (fileName == null || fileData == null) {
-                ResponseBuilder.appendError("Не переданы данные файла");
+                ResponseBuilder.appendLn("Не переданы данные файла");
                 return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
             }
 
@@ -86,46 +93,47 @@ public class RequestHandler {
 
             if (result == ExitCodeCommand.OK) {
                 ResponseBuilder.append("Файл успешно загружен и коллекция обновлена.");
+
             } else {
-                ResponseBuilder.appendError("Не удалось загрузить файл.");
+                ResponseBuilder.appendLn("Не удалось загрузить файл.");
             }
 
             return new Response(result, ResponseBuilder.getOutput());
 
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка при загрузке файла: " + e.getMessage());
+            ResponseBuilder.appendLn("Ошибка при загрузке файла: " + e.getMessage());
             return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
         }
     }
 
     private static Response handleExit(CommandRequest request, Console console, FileManager fileManager) {
         try {
-            ResponseBuilder.append("Сервер завершает работу...");
-
             boolean saved = fileManager.writeCollection();
-            console.sortCollectionIfNeeded("exit");           // сортировка перед отправкой
-            byte[] fileData = fileManager.getCollectionAsBytes();
 
-            if (saved) {
-                ResponseBuilder.append("Коллекция успешно сохранена.");
-            } else {
-                ResponseBuilder.appendError("Не удалось сохранить коллекцию в файл!");
+            String message = saved
+                    ? "Коллекция успешно сохранена на сервере. До свидания!"
+                    : "Ошибка сохранения коллекции.";
+
+            String fileName = console.getLoadFileName();
+            String fileDataBase64 = null;
+
+            if (fileName != null) {
+                try {
+                    byte[] rawData = fileManager.getCollectionAsBytes();
+                    if (rawData != null && rawData.length > 0) {
+                        fileDataBase64 = Base64.getEncoder().encodeToString(rawData);
+                        System.out.println("Файл подготовлен: " + rawData.length + " байт");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Ошибка подготовки файла: " + e.getMessage());
+                }
             }
 
-            Response response = new Response(
-                    saved ? ExitCodeCommand.OK : ExitCodeCommand.ERROR,
-                    ResponseBuilder.getOutput()
-            );
-
-            response.setFileData(fileData);
-            response.setFileName(console.getLoadFileName());
-
-            System.out.println("Клиент отключился. Ожидаю новые подключения...");
-            return response;
+            return new Response(ExitCodeCommand.EXIT, message, "exit", fileName, fileDataBase64);
 
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка при завершении работы: " + e.getMessage());
-            return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
+            e.printStackTrace();
+            return new Response(ExitCodeCommand.ERROR, "Ошибка при завершении работы: " + e.getMessage());
         }
     }
 
@@ -137,13 +145,12 @@ public class RequestHandler {
             ExitCodeCommand result;
 
             if (request.getVehicle() != null) {
-                result = console.launchCommand(commandName, argument, request.getVehicle(), null,null);
+                result = console.launchCommand(commandName, argument, request.getVehicle(), null, null);
             } else {
                 result = console.launchCommand(commandName, argument);
             }
 
-            // Сортировка после изменяющих команд
-            if (!commandName.equals("show") && !commandName.equals("info")) {
+            if (commandName.equals("show")) {
                 console.sortCollectionIfNeeded(commandName);
             }
 
@@ -156,8 +163,9 @@ public class RequestHandler {
             Response response = new Response(result, ResponseBuilder.getOutput());
             System.out.println(ResponseBuilder.getOutput());
             return response;
+
         } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка выполнения команды '" + request.getNameOfCommand() + "': " + e.getMessage());
+            ResponseBuilder.appendLn("Ошибка выполнения команды '" + request.getNameOfCommand() + "': " + e.getMessage());
             return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
         }
     }

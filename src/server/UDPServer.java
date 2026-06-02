@@ -3,77 +3,78 @@ package server;
 import server.utility.Console;
 import server.utility.FileManager;
 import server.utility.RequestHandler;
+import server.utility.ResponseSender;
+import common.commands.CommandRequest;
+import common.interaction.Response;
+import common.utility.Serializer;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
 
+/**
+ * Модуль приёма подключений (неблокирующий режим)
+ */
 public class UDPServer {
 
-    private static final int PORT = 2222;
-    private static final int SELECT_TIMEOUT_MS = 500; // Добавили таймаут
+    private static int PORT;
+    private static final int BUFFER_SIZE = 65536;
 
     private final DatagramChannel channel;
     private final Selector selector;
+
     private final Console console;
     private final FileManager fileManager;
 
-    public UDPServer(Console console, FileManager fileManager) throws IOException {
+
+    public UDPServer(Console console, FileManager fileManager,  int port) throws IOException {
         this.console = console;
         this.fileManager = fileManager;
+        this.PORT=port;
+        this.channel = DatagramChannel.open();
+        this.channel.configureBlocking(false);           // ← Требование лабы
+        this.channel.bind(new InetSocketAddress(PORT));
 
-        channel = DatagramChannel.open();
-        channel.configureBlocking(false);
-        channel.bind(new java.net.InetSocketAddress(PORT));
+        this.selector = Selector.open();
+        this.channel.register(selector, SelectionKey.OP_READ);
 
-        selector = Selector.open();
-        channel.register(selector, SelectionKey.OP_READ);
-
-        System.out.println("✅ Сервер запущен на порту " + PORT);
-        System.out.println("Ожидание подключений от клиента...");
+        System.out.println("Сервер запущен на порту " + PORT);
     }
 
     public void start() {
         try {
             while (true) {
-                // Добавили таймаут, чтобы сервер не "зависал" полностью
-                if (selector.select(SELECT_TIMEOUT_MS) == 0) {
-                    continue;
-                }
+                selector.select();
 
-                Iterator<SelectionKey> it = selector.selectedKeys().iterator();
+                Iterator<SelectionKey> keyIterator = selector.selectedKeys().iterator();
 
-                while (it.hasNext()) {
-                    SelectionKey key = it.next();
+                while (keyIterator.hasNext()) {
+                    SelectionKey key = keyIterator.next();
 
                     if (key.isReadable()) {
-                        handleRequest();
+                        RequestHandler.handleRequest(channel, selector, console, fileManager);
                     }
 
-                    it.remove(); // ОБЯЗАТЕЛЬНО удаляем ключ
+                    keyIterator.remove();
                 }
             }
         } catch (IOException e) {
             System.err.println("Критическая ошибка сервера: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            close();
         }
     }
 
-    private void handleRequest() {
-        RequestHandler.handleRequest(channel, selector, console, fileManager);
-    }
-
-    private void close() {
+    public void stop() {
         try {
             if (selector != null) selector.close();
             if (channel != null) channel.close();
-            System.out.println("Сервер завершил работу.");
+            System.out.println("Сервер остановлен.");
         } catch (IOException e) {
-            System.err.println("Ошибка при закрытии сервера: " + e.getMessage());
+            System.err.println("Ошибка остановки сервера: " + e.getMessage());
         }
     }
 }

@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -28,6 +29,7 @@ public class UserHandler {
     private ArrayList<String> fields = new ArrayList<>(7);
     private FileManagerClient fileManagerClient;
 
+
     public ExitCodeCommand getExitCodeCommandStatus() {
         return ExitCodeCommandStatus;
     }
@@ -41,6 +43,10 @@ public class UserHandler {
         this.userScanner = userScanner;
         this.fileManagerClient = fileManagerClient;
         this.arguments=new ArrayList<>();
+    }
+
+    public UDPClient getUdpClient() {
+        return udpClient;
     }
 
     public String getLoadFileName() {
@@ -86,18 +92,20 @@ public class UserHandler {
                     for (var i : maybeCommand.trim().split("\\s+", 2)) {
                         command.add(i);
                     }
-                    if (command.size() != 0) {
-                        if (command.size() == 1) {
-                            command.add("");
-                        }
+                    if (command.size() ==1) {
+                        command.add("");
                     }
+
                     if (flagElemCommand == true) {
                         if (command.get(0).equals("execute_script") && arguments.contains(command.get(1))) {
                             File file1 = new File(argument);
                             for (int i = 0; i < arguments.size(); i++) {
                                 File file2 = new File(arguments.get(i));
                                 if (file1.getAbsolutePath().equals(file2.getAbsolutePath())) {
-                                    throw new ScriptRecursionException("Не удалось выполнить без ошибок команду " + command.get(0) + " " + command.get(1) + " в скрипте " + argument + " ! Рекурсивный вызов скрипта '" + command.get(1) + "'!");
+                                    String errorMsg = "Не удалось выполнить без ошибок команду " + command.get(0) + " " + command.get(1)
+                                            + " в скрипте " + argument + " ! Рекурсивный вызов скрипта '" + command.get(1) + "'!";
+                                    System.out.println(errorMsg);   // ← Явный вывод
+                                    throw new ScriptRecursionException(errorMsg); // чтобы поймать ниже
                                 }
                             }
                         } else if (command.get(0).equals("add") || command.get(0).equals("update") || command.get(0).equals("remove_greater")) {
@@ -118,7 +126,6 @@ public class UserHandler {
                     } else {
                         fields.add(maybeCommand);
                         if (n == index) {
-                            // ←←← КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ ←←←
                             ExitCodeCommand result = executeCommandWithVehicle(mnemonics, arg, new ArrayList<>(fields));
 
                             if (result != ExitCodeCommand.OK) {
@@ -134,20 +141,12 @@ public class UserHandler {
                     }
                 }
                 catch (ScriptRecursionException e){
-                    System.out.println(e.getMessage());
                     flagSuccessExecute=ExitCodeCommand.ERROR;
                 }
             }
         }
-        catch (IllegalStateException e){
-            System.out.println(e.getMessage());
-            flagSuccessExecute=ExitCodeCommand.ERROR;
-        }
-        catch (NullPointerException e){
-            flagSuccessExecute=ExitCodeCommand.ERROR;
-        }
-        catch (IndexOutOfBoundsException e){
-            System.out.println("В скрипте нет команд!");
+        catch (IllegalStateException | NullPointerException | IndexOutOfBoundsException e){
+            System.out.println(e.getMessage() != null ? e.getMessage() : "Ошибка при выполнении скрипта");
             flagSuccessExecute= ExitCodeCommand.ERROR;
         }
         return flagSuccessExecute;
@@ -259,7 +258,7 @@ public class UserHandler {
                     ExecuteScriptCommand executeScriptCommand = (ExecuteScriptCommand) commandObject;
                     executeScriptCommand.setUserHandler(this);
                     if (!executeScriptCommand.execute().equals(ExitCodeCommand.OK)){
-                           System.out.println("Не удалось выполнить команду");
+                        System.out.println("Не удалось выполнить без ошибок команду " + command.get(0) + " " + command.get(1) +  " !");
                     }
                     continue;
                 }
@@ -286,6 +285,7 @@ public class UserHandler {
         catch(NoSuchElementException e){
             System.out.println(e.getMessage());
             ExitCodeCommandStatus= ExitCodeCommand.CTRL_D;
+            handleExitResponse(udpClient.sendRequest(createCommandRequest(createCommand("exit",""))));
             System.exit(0);
         }
     }
@@ -327,7 +327,6 @@ public class UserHandler {
         // Специальная обработка exit
         if ("exit".equalsIgnoreCase(mnemonics)) {
             handleExitResponse(response);
-            // Можно вернуть EXIT, чтобы прервать скрипт
             return ExitCodeCommand.EXIT;
         }
 
@@ -447,35 +446,30 @@ public class UserHandler {
             System.out.println("Отправка загрузочного файла на сервер: " + loadFileName);
             CommandRequest loadRequest = new CommandRequest("load_file", loadFileName, loadFileName, loadFileData);
             Response response = udpClient.sendRequest(loadRequest);
-            if (response != null && response.isSuccess()) {
-                System.out.println("Загрузочный файл успешно отправлен и обработан сервером.");
-            } else {
-                System.out.println("Предупреждение: файл отправлен, но сервер вернул ошибку.");
-            }
 
+            if (response != null && response.isSuccess()) {
+                System.out.println("Загрузочный файл успешно отправлен.");
+            }
         } catch (Exception e) {
-            System.out.println("Ошибка при отправке загрузочного файла: " + e.getMessage());
+            System.out.println("Ошибка отправки загрузочного файла: " + e.getMessage());
         }
     }
 
-    /**
-     * Обработка ответа на команду exit
-     */
-    private void handleExitResponse(Response response) {
+    public void handleExitResponse(Response response) {
         if (response != null) {
-            System.out.println(response.getMessage());
+            if (response.getMessage() != null) {
+                System.out.println(response.getMessage());
+            }
 
             if (response.getFileData() != null && response.getFileName() != null) {
                 try {
-                    // Перезаписываем локальный загрузочный файл
-                    Files.write(new File(loadFileName).toPath(), response.getFileData());
-                    System.out.println("Файл коллекции успешно обновлён: " + loadFileName);
-                } catch (IOException e) {
-                    System.out.println("Не удалось сохранить файл на клиенте: " + e.getMessage());
+                    byte[] bytes = Base64.getDecoder().decode(response.getFileData());
+                    Files.write(new File(loadFileName).toPath(), bytes);
+                    System.out.println("✅ Файл успешно сохранён (" + bytes.length + " байт)");
+                } catch (Exception e) {
+                    System.out.println("❌ Ошибка сохранения файла: " + e.getMessage());
                 }
             }
-        } else {
-            System.out.println("Сервер не ответил при выходе.");
         }
 
         System.out.println("Клиент завершает работу.");
