@@ -7,13 +7,11 @@ import common.exceptions.CommandNotExist;
 import common.exceptions.ScriptRecursionException;
 import common.exceptions.ValidateDataException;
 import common.interaction.Response;
-import server.utility.FieldReaderServer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -21,14 +19,13 @@ public class UserHandler {
     public ExitCodeCommand ExitCodeCommandStatus = ExitCodeCommand.CTRL_C;
     private UDPClient udpClient;
     private Scanner userScanner;
-    private  String loadFileName;      // имя загрузочного файла
-    private  byte[] loadFileData;      // содержимое загрузочного файла (для exit/save)
+    private  String loadFileName;
+    private  byte[] loadFileData;
     private ArrayList<String> arguments;
     private boolean flagScript;
     private boolean flagReadCollection;
     private ArrayList<String> fields = new ArrayList<>(7);
     private FileManagerClient fileManagerClient;
-
 
     public ExitCodeCommand getExitCodeCommandStatus() {
         return ExitCodeCommandStatus;
@@ -43,6 +40,20 @@ public class UserHandler {
         this.userScanner = userScanner;
         this.fileManagerClient = fileManagerClient;
         this.arguments=new ArrayList<>();
+    }
+    private Response sendAndCheck(CommandRequest request) {
+        Response response = udpClient.sendRequest(request);
+        if (response == null || !response.isSuccess()) {
+            if (response != null && response.getMessage() != null) {
+                System.out.println(response.getMessage());
+            } else {
+                System.out.println("Сервер временно недоступен.");
+            }
+            System.out.println("Клиент завершает работу.");
+            udpClient.close();
+            System.exit(1);
+        }
+        return response;
     }
 
     public UDPClient getUdpClient() {
@@ -104,8 +115,8 @@ public class UserHandler {
                                 if (file1.getAbsolutePath().equals(file2.getAbsolutePath())) {
                                     String errorMsg = "Не удалось выполнить без ошибок команду " + command.get(0) + " " + command.get(1)
                                             + " в скрипте " + argument + " ! Рекурсивный вызов скрипта '" + command.get(1) + "'!";
-                                    System.out.println(errorMsg);   // ← Явный вывод
-                                    throw new ScriptRecursionException(errorMsg); // чтобы поймать ниже
+                                    System.out.println(errorMsg);
+                                    throw new ScriptRecursionException(errorMsg);
                                 }
                             }
                         } else if (command.get(0).equals("add") || command.get(0).equals("update") || command.get(0).equals("remove_greater")) {
@@ -152,17 +163,12 @@ public class UserHandler {
         return flagSuccessExecute;
     }
 
-    /**
-     * Выполняет команду, которая требует объект Vehicle (add, update, remove_greater)
-     */
     private ExitCodeCommand executeCommandWithVehicle(String mnemonics, String argument, ArrayList<String> objectFields) {
-
         Command commandObject = createCommand(mnemonics, argument);
         if (commandObject == null) {
             return ExitCodeCommand.ERROR;
         }
 
-        // Здесь нужно передать собранные поля в команду
         try {
             if (commandObject instanceof AddCommand) {
                 ((AddCommand) commandObject).setVehicle(FieldReaderClient.askVehicleObject());
@@ -176,7 +182,6 @@ public class UserHandler {
             return ExitCodeCommand.ERROR;
         }
 
-
         try {
             if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
                 throw new ValidateDataException("Команда '" + mnemonics + "' " + argument + " не валидна!");
@@ -187,9 +192,8 @@ public class UserHandler {
             return ExitCodeCommand.ERROR;
         }
 
-        // Отправка на сервер
         CommandRequest request = createCommandRequest(commandObject);
-        Response response = udpClient.sendRequest(request);
+        Response response = sendAndCheck(request);   // ← минимальное изменение
 
         if (response != null && response.getMessage() != null && !response.getMessage().isEmpty()) {
             System.out.println("   " + response.getMessage());
@@ -199,9 +203,8 @@ public class UserHandler {
     }
 
     public void interactiveMode(String nameOfLoadFile) {
-        //Считаем путь или имя загрузочного файла
         String nameOfFile=nameOfLoadFile;
-        while (Validator.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_COLLECTION)==false){
+        while (ValidatorClient.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_COLLECTION)==false){
             nameOfFile= FieldReaderClient.askFile();
         }
         this.loadFileName=nameOfFile;
@@ -213,13 +216,9 @@ public class UserHandler {
             this.loadFileData = new byte[0];
         }
 
-
-        //Отправляем загрузочного файл на сервер
         sendLoadFileToServer();
-
         flagReadCollection=false;
 
-        //Считывание команд с терминала пользователя
         try {
             while (true) {
                 System.out.println("Введите команду");
@@ -234,13 +233,10 @@ public class UserHandler {
                     command.add("");
                 }
 
-
-                // Создание объекта команды
                 Command commandObject = createCommand(command.get(0), command.get(1));
 
                 if (commandObject == null) {continue;}
 
-                // Валидация команды
                 try {
                     if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
                         throw new ValidateDataException("Команда '" + command.get(0) + "' " + command.get(1) + " не валидна!");
@@ -250,8 +246,6 @@ public class UserHandler {
                     System.out.println(e.getMessage());
                     continue;
                 }
-
-                // Создание запроса и отправка на сервер
 
                 if ("execute_script".equalsIgnoreCase(commandObject.getNameOfCommand())) {
                     flagScript=true;
@@ -264,22 +258,16 @@ public class UserHandler {
                 }
 
                 CommandRequest request = createCommandRequest(commandObject);
-
-                Response response = udpClient.sendRequest(request);
+                Response response = sendAndCheck(request);   // ← минимальное изменение
 
                 if ("exit".equalsIgnoreCase(commandObject.getNameOfCommand())) {
                     handleExitResponse(response);
                     return;
                 }
 
-
-                // Вывод ответа сервера (для остальных команд)
-                if (response != null) {
-                    if (response.getMessage() != null && !response.getMessage().isEmpty()) {
-                        System.out.println(response.getMessage());
-                    }
+                if (response != null && response.getMessage() != null && !response.getMessage().isEmpty()) {
+                    System.out.println(response.getMessage());
                 }
-
             }
         }
         catch(NoSuchElementException e){
@@ -290,18 +278,12 @@ public class UserHandler {
         }
     }
 
-    /**
-     * Выполняет одну команду и отправляет её на сервер (аналогично interactiveMode)
-     */
     private ExitCodeCommand executeCommandFromScript(String mnemonics, String argument) {
-
-        // Создание объекта команды
         Command commandObject = createCommand(mnemonics, argument);
         if (commandObject == null) {
             return ExitCodeCommand.ERROR;
         }
 
-        // Валидация команды
         try {
             if (!commandObject.validate().equals(ExitCodeCommand.OK)) {
                 throw new ValidateDataException("Команда '" + mnemonics + "' " + argument + " не валидна!");
@@ -311,26 +293,22 @@ public class UserHandler {
             return ExitCodeCommand.ERROR;
         }
 
-        // Специальная обработка execute_script (рекурсия)
         if ("execute_script".equalsIgnoreCase(mnemonics)) {
             ExecuteScriptCommand esc = (ExecuteScriptCommand) commandObject;
             flagScript=true;
             esc.setUserHandler(this);
             String path = esc.getFileName() != null ? esc.getFileName() : argument;
-            return scriptMode(path);   // рекурсивный вызов
+            return scriptMode(path);
         }
 
-        // Отправка на сервер
         CommandRequest request = createCommandRequest(commandObject);
-        Response response = udpClient.sendRequest(request);
+        Response response = sendAndCheck(request);   // ← минимальное изменение
 
-        // Специальная обработка exit
         if ("exit".equalsIgnoreCase(mnemonics)) {
             handleExitResponse(response);
             return ExitCodeCommand.EXIT;
         }
 
-        // Вывод ответа сервера
         if (response != null && response.getMessage() != null && !response.getMessage().isEmpty()) {
             System.out.println("   " + response.getMessage());
         }
@@ -338,120 +316,64 @@ public class UserHandler {
         return (response != null && response.isSuccess()) ? ExitCodeCommand.OK : ExitCodeCommand.ERROR;
     }
 
+    private void sendLoadFileToServer() {
+        try {
+            System.out.println("Отправка загрузочного файла на сервер: " + loadFileName);
+            CommandRequest loadRequest = new CommandRequest("load_file", loadFileName, loadFileName, loadFileData);
+            Response response = sendAndCheck(loadRequest);   // ← минимальное изменение
+
+            if (response != null && response.isSuccess()) {
+                System.out.println("Загрузочный файл успешно доставлен на сервер.");
+            }
+        } catch (Exception e) {
+            System.out.println("Ошибка отправки загрузочного файла: " + e.getMessage());
+        }
+    }
 
     public Command createCommand(String mnemonics, String argument){
         try {
             switch (mnemonics) {
-                case "help": {
-                    return new HelpCommand(argument);
-                }
-                case "info": {
-                    return new InfoCommand(argument);
-                }
-                case "show": {
-                    return new ShowCommand(argument);
-                }
-                case "add": {
-                    if (flagScript==true) {
-                        return new AddCommand(argument, false);
-                    }
-                    else {
-                        return new AddCommand(argument, true);
-                    }
-                }
-                case "update": {
-                    if (flagScript==true) {
-                        return new UpdateIdCommand(argument, false);
-                    }
-                    else {
-                        return new UpdateIdCommand(argument, true);
-                    }
-                }
-                case "remove_by_id": {
-                    return new RemoveByIdCommand(argument);
-                }
-                case "clear": {
-                    return new ClearCommand(argument);
-                }
-                case "exit": {
-                    return new ExitCommand(argument);
-                }
-                case "execute_script": {
-                    return new ExecuteScriptCommand(argument);
-                }
-                case "remove_greater": {
-                    if (flagScript==true){
-                        return new RemoveGreaterCommand(argument,false);
-                    }
-                    else {
-                        return new RemoveGreaterCommand(argument,true);
-                    }
-                }
-                case "reorder": {
-                    return new ReorderCommand(argument);
-                }
-                case "sort": {
-                    return new SortCommand(argument);
-                }
-                case "sum_of_engine_power": {
-                    return new SumOfEnginePowerCommand(argument);
-                }
-                case "print_field_ascending_number_of_wheels": {
-                    return new PrintFieldAscendingNumberOfWheelsCommand(argument);
-                }
-                case "print_field_descending_number_of_wheels": {
-                    return new PrintFieldDescendingNumberOfWheelsCommand(argument);
-                }
-                default: {
-                    if (!((mnemonics + argument).isEmpty() || (mnemonics + argument).trim().isEmpty())) {
+                case "help": return new HelpCommand(argument);
+                case "info": return new InfoCommand(argument);
+                case "show": return new ShowCommand(argument);
+                case "add": return new AddCommand(argument, !flagScript);
+                case "update": return new UpdateIdCommand(argument, !flagScript);
+                case "remove_by_id": return new RemoveByIdCommand(argument);
+                case "clear": return new ClearCommand(argument);
+                case "exit": return new ExitCommand(argument);
+                case "execute_script": return new ExecuteScriptCommand(argument);
+                case "remove_greater": return new RemoveGreaterCommand(argument, !flagScript);
+                case "reorder": return new ReorderCommand(argument);
+                case "sort": return new SortCommand(argument);
+                case "sum_of_engine_power": return new SumOfEnginePowerCommand(argument);
+                case "print_field_ascending_number_of_wheels": return new PrintFieldAscendingNumberOfWheelsCommand(argument);
+                case "print_field_descending_number_of_wheels": return new PrintFieldDescendingNumberOfWheelsCommand(argument);
+                default:
+                    if (!((mnemonics + argument).trim().isEmpty())) {
                         throw new CommandNotExist("Команда " + mnemonics + " не существует!");
                     }
                     return null;
-                }
             }
-        }
-        catch (CommandNotExist e){
+        } catch (CommandNotExist e){
             System.out.println(e.getMessage());
             return null;
         }
     }
 
     public CommandRequest createCommandRequest(Command command){
-            switch (command.getNameOfCommand()) {
-                case "help", "remove_by_id", "exit", "info", "show", "clear", "reorder", "sort",
-                     "sum_of_engine_power", "print_field_ascending_number_of_wheels",
-                     "print_field_descending_number_of_wheels": {
-                    return new CommandRequest(command.getNameOfCommand(),command.getArgument());
-                }
-                case "add": {
-                    AddCommand addCommand = (AddCommand) command;
-                    return new CommandRequest(command.getNameOfCommand(),command.getArgument(),addCommand.getVehicle());
-                }
-                case "update": {
-                    UpdateIdCommand updateIdCommand = (UpdateIdCommand) command;
-                    return new CommandRequest(command.getNameOfCommand(),command.getArgument(),updateIdCommand.getVehicle());
-                }
-                case "remove_greater": {
-                    RemoveGreaterCommand removeGreaterCommand = (RemoveGreaterCommand) command;
-                    return new CommandRequest(command.getNameOfCommand(),command.getArgument(),removeGreaterCommand.getVehicle());
-                }
-                default: {
-                    return null;
-                }
-            }
-    }
-
-    private void sendLoadFileToServer() {
-        try {
-            System.out.println("Отправка загрузочного файла на сервер: " + loadFileName);
-            CommandRequest loadRequest = new CommandRequest("load_file", loadFileName, loadFileName, loadFileData);
-            Response response = udpClient.sendRequest(loadRequest);
-
-            if (response != null && response.isSuccess()) {
-                System.out.println("Загрузочный файл успешно отправлен.");
-            }
-        } catch (Exception e) {
-            System.out.println("Ошибка отправки загрузочного файла: " + e.getMessage());
+        switch (command.getNameOfCommand()) {
+            case "help", "remove_by_id", "exit", "info", "show", "clear", "reorder", "sort",
+                 "sum_of_engine_power", "print_field_ascending_number_of_wheels",
+                 "print_field_descending_number_of_wheels":
+                return new CommandRequest(command.getNameOfCommand(),command.getArgument());
+            case "add":
+                return new CommandRequest(command.getNameOfCommand(),command.getArgument(),((AddCommand) command).getVehicle());
+            case "update":
+                return new CommandRequest(command.getNameOfCommand(),command.getArgument(),((UpdateIdCommand) command).getVehicle());
+            case "remove_greater":
+                return new CommandRequest(command.getNameOfCommand(),command.getArgument(),((RemoveGreaterCommand) command).getVehicle());
+            default:
+                return null;
         }
     }
 
@@ -465,23 +387,17 @@ public class UserHandler {
 
         System.out.println(response.getMessage());
 
-        // Сохранение файла
         if (response.getFileData() != null && response.getFileData().length > 0 && loadFileName != null) {
             try {
                 Files.write(new File(loadFileName).toPath(), response.getFileData());
-                System.out.println("✅ Файл коллекции успешно обновлён: " + loadFileName
-                        + " (" + response.getFileData().length + " байт)");
+                System.out.println("Обновленную коллекцию можете увидеть в файле: " + loadFileName);
             } catch (IOException e) {
-                System.err.println("❌ Не удалось сохранить файл на клиенте: " + e.getMessage());
+                System.out.println("Не удалось сохранить файл на клиенте: " + e.getMessage());
             }
-        } else {
-            System.out.println("⚠️ Сервер не отправил данные файла (fileData пустой).");
         }
-
         System.out.println("Клиент завершает работу.");
         udpClient.close();
         ExitCodeCommandStatus = ExitCodeCommand.EXIT;
         System.exit(0);
     }
-
 }

@@ -37,13 +37,13 @@ public class UDPServer {
         this.fileManager = fileManager;
         this.PORT=port;
         this.channel = DatagramChannel.open();
-        this.channel.configureBlocking(false);           // ← Требование лабы
+        this.channel.configureBlocking(false);
         this.channel.bind(new InetSocketAddress(PORT));
 
         this.selector = Selector.open();
         this.channel.register(selector, SelectionKey.OP_READ);
 
-        System.out.println("Сервер запущен на порту " + PORT);
+        System.out.println("Сервер запускается на порту " + PORT);
     }
 
     public void start() {
@@ -64,7 +64,7 @@ public class UDPServer {
                 }
             }
         } catch (IOException e) {
-            System.err.println("Критическая ошибка сервера: " + e.getMessage());
+            System.out.println("Критическая ошибка сервера: " + e.getMessage());
         }
     }
 
@@ -72,9 +72,9 @@ public class UDPServer {
         try {
             if (selector != null) selector.close();
             if (channel != null) channel.close();
-            System.out.println("Сервер остановлен.");
+            System.out.println("Работа сервер остановлена");
         } catch (IOException e) {
-            System.err.println("Ошибка остановки сервера: " + e.getMessage());
+            System.out.println("Ошибка остановки работы сервера: " + e.getMessage());
         }
     }
 }

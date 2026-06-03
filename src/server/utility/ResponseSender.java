@@ -15,7 +15,7 @@ public class ResponseSender {
 
     public static void sendResponse(DatagramChannel channel, SocketAddress clientAddress, Response response) {
         try {
-            Thread.sleep(15); // критически важная задержка
+            Thread.sleep(15);
 
             byte[] data = Serializer.serialize(response);
 
@@ -42,7 +42,7 @@ public class ResponseSender {
             }
 
         } catch (Exception e) {
-            System.err.println("Ошибка отправки ответа: " + e.getMessage());
+            System.out.println("Ошибка отправки ответа: " + e.getMessage());
             e.printStackTrace();
         }
     }

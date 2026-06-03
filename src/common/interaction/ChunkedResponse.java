@@ -15,6 +15,7 @@ public class ChunkedResponse implements Serializable {
         this.data = data;
     }
 
+
     public int getTotalChunks() { return totalChunks; }
     public int getChunkIndex() { return chunkIndex; }
     public byte[] getData() { return data; }

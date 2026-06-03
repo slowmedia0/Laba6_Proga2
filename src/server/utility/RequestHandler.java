@@ -2,6 +2,7 @@ package server.utility;
 
 import common.commands.CommandRequest;
 import common.interaction.Response;
+import common.utility.ResponseBuilder;
 import common.utility.Serializer;
 import common.ExitCodeCommand;
 
@@ -10,16 +11,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.Selector;
 
-/**
- * Модуль обработки полученных команд
- */
+
 public class RequestHandler {
 
     private static final int BUFFER_SIZE = 65536;
 
-    /**
-     * Главный метод обработки запроса (сохранена твоя логика)
-     */
+
     public static void handleRequest(DatagramChannel channel, Selector selector,
                                      Console console, FileManager fileManager) {
 
@@ -37,26 +34,21 @@ public class RequestHandler {
 
             CommandRequest request = Serializer.deserialize(requestBytes);
 
-            System.out.println("← Получена команда: " + request.getNameOfCommand() + " от " + clientAddress);
+            System.out.println("<- Получен запрос: " + request.getNameOfCommand() + " от " + clientAddress);
 
             Response response;
             String cmd = request.getNameOfCommand().toLowerCase().trim();
 
-            // Очищаем builder перед каждой новой командой
             ResponseBuilder.clear();
 
             if ("load_file".equals(cmd)) {
                 response = handleLoadFile(request, console);
-            }
-            else if ("exit".equals(cmd)) {
-                response = handleExit(request, console, fileManager);
             }
             else {
                 response = processCommand(request, console);
             }
 
 
-            // Отправляем ответ
             ResponseSender.sendResponse(channel, clientAddress, response);
 
 
@@ -76,7 +68,6 @@ public class RequestHandler {
         }
     }
 
-    // ==================== Обработчики команд (логика сохранена) ====================
 
     private static Response handleLoadFile(CommandRequest request, Console console) {
         try {
@@ -91,9 +82,9 @@ public class RequestHandler {
             ExitCodeCommand result = console.loadCollectionFromBytes(fileName, fileData);
 
             if (result == ExitCodeCommand.OK) {
-                ResponseBuilder.append("Файл успешно загружен и коллекция обновлена.");
+                ResponseBuilder.append("Файл успешно загружен и инициализирована");
             } else {
-                ResponseBuilder.appendLn("Не удалось загрузить файл.");
+                ResponseBuilder.appendLn("Не удалось загрузить файл");
             }
 
             return new Response(result, ResponseBuilder.getOutput());
@@ -104,44 +95,7 @@ public class RequestHandler {
         }
     }
 
-    private static Response handleExit(CommandRequest request, Console console, FileManager fileManager) {
-        try {
-            ResponseBuilder.clear();
-            ResponseBuilder.append("Сервер завершает работу...");
 
-            // Сохраняем коллекцию в файл
-            boolean saved = fileManager.writeCollection();
-
-            // Сортируем перед отправкой
-            console.sortCollectionIfNeeded("exit");
-
-            // Получаем байты файла (после сохранения!)
-            byte[] fileData = fileManager.getCollectionAsBytes();
-
-            if (saved) {
-                ResponseBuilder.append("Коллекция успешно сохранена.");
-            } else {
-                ResponseBuilder.appendError("Не удалось сохранить коллекцию в файл!");
-            }
-
-            Response response = new Response(
-                    saved ? ExitCodeCommand.OK : ExitCodeCommand.ERROR,
-                    ResponseBuilder.getOutput()
-            );
-
-            response.setFileData(fileData);
-            response.setFileName(console.getLoadFileName());
-
-            System.out.println("✅ Exit: подготовлен файл для клиента (" +
-                    (fileData != null ? fileData.length : 0) + " байт)");
-
-            return response;
-
-        } catch (Exception e) {
-            ResponseBuilder.appendError("Ошибка при завершении работы: " + e.getMessage());
-            return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
-        }
-    }
 
     private static Response processCommand(CommandRequest request, Console console) {
         try {
@@ -156,11 +110,7 @@ public class RequestHandler {
                 result = console.launchCommand(commandName, argument);
             }
 
-            if (commandName.equals("show")) {
-                console.sortCollectionIfNeeded(commandName);
-            }
-
-            String statusMessage = (result == ExitCodeCommand.OK)
+            String statusMessage = (result == ExitCodeCommand.OK | result == ExitCodeCommand.EXIT)
                     ? "Команда выполнена успешно."
                     : "Команда выполнена с ошибками.";
 

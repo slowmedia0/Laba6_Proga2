@@ -23,7 +23,7 @@ public class FileManagerClient {
         ArrayList<String> commands = new ArrayList<>();
         String nameOfFile = argument;
         File file = new File(nameOfFile);
-        if (Validator.validateNameOfFile(nameOfFile, ModeOfFileManager.READ_SCRIPT)==false)
+        if (ValidatorClient.validateNameOfFile(nameOfFile, ModeOfFileManager.READ_SCRIPT)==false)
         {
             return null;
         }

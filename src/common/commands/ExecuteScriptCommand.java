@@ -3,9 +3,10 @@ package common.commands;
 import client.utility.FieldReaderClient;
 import client.utility.FileManagerClient;
 import client.utility.UserHandler;
-import client.utility.Validator;
+import client.utility.ValidatorClient;
 import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
+import common.utility.ResponseBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class ExecuteScriptCommand extends AbstractCommand{
         super("execute_script","считать и исполнить скрипт из указанного файла. В скрипте содержатся команды в таком же виде, в котором их вводит пользователь в интерактивном режиме.");
         this.argument=argument;
         String nameOfFile=argument;
-        while (Validator.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_SCRIPT)==false){
+        while (ValidatorClient.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_SCRIPT)==false){
             nameOfFile=FieldReaderClient.askFile();
         }
         this.FileName=nameOfFile;
@@ -30,7 +31,7 @@ public class ExecuteScriptCommand extends AbstractCommand{
             File file = new File(nameOfFile);
             this.FileData = Files.readAllBytes(file.toPath());
         } catch (IOException e) {
-            System.err.println("Ошибка чтения скрипта-файла: " + e.getMessage());
+            System.out.println("Ошибка чтения скрипта-файла: " + e.getMessage());
             this.FileData = new byte[0];
         }
         this.argument=nameOfFile;
@@ -94,10 +95,12 @@ public class ExecuteScriptCommand extends AbstractCommand{
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
         catch (IllegalArgumentException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

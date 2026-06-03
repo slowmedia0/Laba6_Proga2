@@ -5,6 +5,7 @@ import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
 import common.interaction.Response;
 import server.utility.FileManager;
+import common.utility.ResponseBuilder;
 
 public class ExitCommand extends AbstractCommand{
     private FileManager fileManager;
@@ -48,42 +49,9 @@ public class ExitCommand extends AbstractCommand{
             return valid;
         }
 
-        // === Логика сервера ===
-        if (fileManager != null) {
-            try {
-                println("Выполняется сохранение коллекции...");
+        SaveCommand saveCommand = new SaveCommand(fileManager);
 
-                SaveCommand saveCommand = new SaveCommand(fileManager);
-                ExitCodeCommand saveResult = saveCommand.execute();
-
-                if (!saveResult.equals(ExitCodeCommand.OK)) {
-                    println("Предупреждение: не удалось сохранить коллекцию.");
-                } else {
-                    println("Коллекция успешно сохранена.");
-                }
-
-                // Подготавливаем ответ для клиента
-                byte[] fileData = fileManager.getCollectionAsBytes();
-                String fileName = fileManager.getLoadFile().getName();
-
-                Response customResponse = new Response(ExitCodeCommand.EXIT,
-                        "Клиент успешно отключён.\nКоллекция сохранена на сервере.");
-
-                customResponse.setFileData(fileData);
-                customResponse.setFileName(fileName);
-
-                return ExitCodeCommand.EXIT;
-
-            } catch (Exception e) {
-                println("Ошибка при сохранении коллекции: " + e.getMessage());
-                return ExitCodeCommand.ERROR;
-            }
-        }
-
-        // === Логика клиента ===
-        println("Клиент завершает работу...");
-
-
+        ExitCodeCommand saveResult = saveCommand.execute();
 
         return ExitCodeCommand.EXIT;
     }
@@ -96,6 +64,7 @@ public class ExitCommand extends AbstractCommand{
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

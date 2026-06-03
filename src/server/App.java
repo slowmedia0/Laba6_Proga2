@@ -1,5 +1,6 @@
 package server;
 
+
 import common.commands.*;
 import server.utility.*;
 import server.utility.FileManager;
@@ -7,24 +8,23 @@ import server.utility.FileManager;
 public class App {
 
     public static void main(String[] args) {
-         /*
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("Завершение работы сервера");
+        }));
+
         if (args.length != 1) {
-            System.out.println("Ошибка: необходимо указать один аргумент!");
-            System.out.println("Использование: java -jar client.jar <port>");
-            System.exit(0);
-        }
-
-        int port;
-
-        try {
-            port = Integer.parseInt(args[1].trim());
-        } catch (NumberFormatException e) {
-            System.out.println("Ошибка: порт должен быть целым числом!");
+            System.out.println("Необходимо указать один аргумент!");
+            System.out.println("Использование: java -jar server.jar <port>");
+            System.out.println("Пример корректного использования: java -jar server.jar 2222");
             System.exit(1);
-            return;
         }
-         */
-        int port=2222;
+
+
+
+
+        Integer port = FieldReaderServer.readPort(args[0]);
+
+
 
         try {
             CollectionManager collectionManager = new CollectionManager();
@@ -54,17 +54,12 @@ public class App {
 
 
             UDPServer server = new UDPServer(console, fileManager,port);
-            System.out.println("=== Сервер успешно запущен ===");
-            System.out.println("Ожидание подключения клиента...");
-
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                System.out.println("\nЗавершение сервера.");
-            }));
+            System.out.println("Сервер успешно запущен");
 
             server.start();
 
         } catch (Exception e) {
-            System.err.println("Ошибка запуска сервера: " + e.getMessage());
+            System.out.println("Ошибка запуска сервера: " + e.getMessage());
             e.printStackTrace();
         }
     }

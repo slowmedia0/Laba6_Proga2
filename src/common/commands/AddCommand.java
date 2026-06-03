@@ -4,6 +4,7 @@ import client.utility.FieldReaderClient;
 import common.ExitCodeCommand;
 import common.models.Vehicle;
 import server.utility.CollectionManager;
+import common.utility.ResponseBuilder;
 
 public class AddCommand extends AbstractCommand {
     private CollectionManager collectionManager;
@@ -66,6 +67,7 @@ public class AddCommand extends AbstractCommand {
         }
         catch (Exception e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }
@@ -79,6 +81,7 @@ public class AddCommand extends AbstractCommand {
             return ExitCodeCommand.OK;
         } catch (IllegalStateException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

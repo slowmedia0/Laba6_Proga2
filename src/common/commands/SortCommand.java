@@ -3,6 +3,7 @@ package common.commands;
 import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
 import server.utility.CollectionManager;
+import common.utility.ResponseBuilder;
 
 public class SortCommand extends AbstractCommand{
     private CollectionManager collectionManager;
@@ -50,6 +51,7 @@ public class SortCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.OK;
         }
     }
@@ -62,6 +64,7 @@ public class SortCommand extends AbstractCommand{
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

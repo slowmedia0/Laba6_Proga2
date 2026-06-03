@@ -5,6 +5,7 @@ import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
 import common.models.Vehicle;
 import server.utility.CollectionManager;
+import common.utility.ResponseBuilder;
 
 public class RemoveGreaterCommand extends AbstractCommand{
     private CollectionManager collectionManager;
@@ -68,14 +69,17 @@ public class RemoveGreaterCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.OK;
         }
         catch (IndexOutOfBoundsException e){
             System.out.println("Коллекция пуста!");
+            ResponseBuilder.appendLn("Коллекция пуста!");
             return ExitCodeCommand.OK;
         }
         catch (Exception e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }
@@ -89,6 +93,7 @@ public class RemoveGreaterCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

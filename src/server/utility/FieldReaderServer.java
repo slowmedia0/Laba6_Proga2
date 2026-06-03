@@ -1,16 +1,13 @@
 package server.utility;
 
-import client.utility.Validator;
-import common.ExitCodeCommand;
 import common.exceptions.*;
 import common.models.*;
+import common.utility.ResponseBuilder;
 
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
@@ -70,7 +67,7 @@ public class FieldReaderServer {
                 id = Integer.valueOf(data);
             }
 
-            Validator.validateIdVehicle(id);
+            ValidatorServer.validateIdVehicle(id);
             collectionManager.getArrayId().add(id);
             return id;
 
@@ -114,7 +111,7 @@ public class FieldReaderServer {
                 throw new ValueOutOfBoundsException("Максимальная длина поля 'name' = " + maxLenOfName);
             }
 
-            Validator.validateNameVehicle(name);
+            ValidatorServer.validateNameVehicle(name);
             return name;
 
         } catch (ValueOutOfBoundsException | NotExistException | ValidateDataException e) {
@@ -128,7 +125,7 @@ public class FieldReaderServer {
             Long x = readFieldX(argX);
             Double y = readFieldY(argY);
             Coordinates coordinates = new Coordinates(x, y);
-            Validator.validateCoordinatesVehicle(coordinates);
+            ValidatorServer.validateCoordinatesVehicle(coordinates);
             return coordinates;
         } catch (FieldReadException e) {
             printErrorIfNotScript("Не удалось считать поле 'coordinates'!");
@@ -169,7 +166,7 @@ public class FieldReaderServer {
             }
 
             x = Long.valueOf(data);
-            Validator.validateXCoordinates(x);
+            ValidatorServer.validateXCoordinates(x);
             return x;
 
         } catch (Exception e) {
@@ -207,7 +204,7 @@ public class FieldReaderServer {
             }
 
             y = Double.valueOf(data);
-            Validator.validateYCoordinates(y);
+            ValidatorServer.validateYCoordinates(y);
             return y;
 
         } catch (Exception e) {
@@ -233,7 +230,7 @@ public class FieldReaderServer {
                 creationDate = LocalDate.parse(data);
             }
 
-            Validator.validateCreationDateVehicle(creationDate);
+            ValidatorServer.validateCreationDateVehicle(creationDate);
             return creationDate;
 
         } catch (Exception e) {
@@ -284,7 +281,7 @@ public class FieldReaderServer {
             }
 
             Long numberOfWheels = Long.valueOf(data);
-            Validator.validateNumberOfWheelsVehicle(numberOfWheels);
+            ValidatorServer.validateNumberOfWheelsVehicle(numberOfWheels);
             return numberOfWheels;
 
         } catch (Exception e) {
@@ -306,7 +303,7 @@ public class FieldReaderServer {
             }
 
             VehicleType type = VehicleType.valueOf(data.trim());
-            Validator.validateTypeVehicle(type);
+            ValidatorServer.validateTypeVehicle(type);
             return type;
 
         } catch (Exception e) {
@@ -333,6 +330,98 @@ public class FieldReaderServer {
         } catch (Exception e) {
             printErrorIfNotScript("Не удалось считать поле 'fuelType'!");
             throw new FieldReadException("Не удалось считать поле 'fuelType'!", e);
+        }
+    }
+
+    public static Integer askPort(String argument)  {
+        try {
+            System.out.println("Введите целое число для поля 'port'");
+            if (!userScanner.hasNextLine()) {
+                throw new NoSuchElementException("Вы использовали Ctrl+D. Ввод прерван.");
+            }
+            String data = userScanner.nextLine();
+            Integer port;
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'port' указано более одного аргумента!");
+            }
+            if (data.isEmpty()) {
+                throw new NumberFormatException("Поле 'port' не может быть null!");
+            } else if (data.trim().isEmpty()) {
+                throw new NumberFormatException("Для поля 'port' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+            } else {
+                BigDecimal a;
+                try {
+                    data = data.replace(",", ".").trim();
+                    data = data.replaceAll("\\.0+$", "");
+                    a = new BigDecimal(data);
+                } catch (NumberFormatException e) {
+                    throw new NumberFormatException("");
+                }
+                if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
+                    throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
+                }
+                BigInteger b = new BigInteger(data);
+                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger endOfBounds = BigInteger.valueOf(65535);
+                if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
+                    throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
+                }
+                port = Integer.valueOf(data);
+            }
+            return port;
+        } catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+            return null;
+        } catch (WrongAmountOfElementsException | NumberFormatException e) {
+            System.out.println("Не удалось считать поле 'port'! Поле 'port' должно быть целым числом!" + " " + e.getMessage());
+            System.out.println("Повторите попытку ввода");
+            return askPort(null);
+        } catch (ValueOutOfBoundsException e) {
+            System.out.println("Не удалось считать поле 'port'!" + " " + e.getMessage());
+            System.out.println("Повторите попытку ввода");
+            return askPort(null);
+        }
+    }
+
+    public static Integer readPort(String argument)  {
+        try {
+            String data = argument;
+            Integer port;
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'port' указано более одного аргумента!");
+            }
+            if (data.isEmpty()) {
+                throw new NumberFormatException("Поле 'port' не может быть null!");
+            } else if (data.trim().isEmpty()) {
+                throw new NumberFormatException("Для поля 'port' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+            } else {
+                BigDecimal a;
+                try {
+                    data = data.replace(",", ".").trim();
+                    data = data.replaceAll("\\.0+$", "");
+                    a = new BigDecimal(data);
+                } catch (NumberFormatException e) {
+                    throw new NumberFormatException("");
+                }
+                if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
+                    throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
+                }
+                BigInteger b = new BigInteger(data);
+                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger endOfBounds = BigInteger.valueOf(65535);
+                if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
+                    throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
+                }
+                port = Integer.valueOf(data);
+            }
+            return port;
+        } catch (WrongAmountOfElementsException | NumberFormatException e) {
+            System.out.println("Не удалось считать поле 'port'! Поле 'port' должно быть целым числом!" + " " + e.getMessage());
+            return askPort(null);
+        } catch (ValueOutOfBoundsException e) {
+            System.out.println("Не удалось считать поле 'port'!" + " " + e.getMessage());
+            return askPort(null);
         }
     }
 }

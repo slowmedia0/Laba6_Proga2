@@ -91,7 +91,7 @@ public class FieldReaderClient {
                 if (name.length()>maxLenOfName){
                     throw new ValueOutOfBoundsException("Максимальная длина поля 'name' = " + maxLenOfName);
                 }
-                Validator.validateNameVehicle(name);
+                ValidatorClient.validateNameVehicle(name);
                 return name;
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
@@ -127,7 +127,7 @@ public class FieldReaderClient {
                 if (name.length()>maxLenOfName){
                     throw new ValueOutOfBoundsException("Максимальная длина поля 'name' = " + maxLenOfName);
                 }
-                Validator.validateNameVehicle(name);
+                ValidatorClient.validateNameVehicle(name);
                 return name;
             }
             catch (ValueOutOfBoundsException e){
@@ -175,7 +175,7 @@ public class FieldReaderClient {
                     y = readFieldY("");
                     coordinates = new Coordinates(x,y);
                 }
-                Validator.validateCoordinatesVehicle(coordinates);
+                ValidatorClient.validateCoordinatesVehicle(coordinates);
                 return coordinates;
             }
             catch (FieldReadException e){
@@ -227,7 +227,7 @@ public class FieldReaderClient {
                     }
                     x = Long.valueOf(data);
                 }
-                Validator.validateXCoordinates(x);
+                ValidatorClient.validateXCoordinates(x);
                 return x;
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
@@ -284,7 +284,7 @@ public class FieldReaderClient {
                     }
                     x = Long.valueOf(data);
                 }
-                Validator.validateXCoordinates(x);
+                ValidatorClient.validateXCoordinates(x);
                 return x;
             } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
                 throw new FieldReadException("Не удалось считать поле 'x'! Поле 'x' должно быть целым числом!", e);
@@ -346,7 +346,7 @@ public class FieldReaderClient {
                         }
                     }
                 }
-                Validator.validateYCoordinates(y);
+                ValidatorClient.validateYCoordinates(y);
                 return y;
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
@@ -405,7 +405,7 @@ public class FieldReaderClient {
                         System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'y': " + y);
                     }
                 }
-                Validator.validateYCoordinates(y);
+                ValidatorClient.validateYCoordinates(y);
                 return y;
             }
             catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
@@ -444,7 +444,7 @@ public class FieldReaderClient {
                     throw new IllegalArgumentException("");
                 }
             }
-            Validator.validateCreationDateVehicle(creationDate);
+            ValidatorClient.validateCreationDateVehicle(creationDate);
             return creationDate;
         }
         catch (WrongAmountOfElementsException | IllegalArgumentException | ValidateDataException e){
@@ -644,7 +644,7 @@ public class FieldReaderClient {
                     }
                     numberOfWheels = Long.valueOf(data);
                 }
-                Validator.validateNumberOfWheelsVehicle(numberOfWheels);
+                ValidatorClient.validateNumberOfWheelsVehicle(numberOfWheels);
                 return numberOfWheels;
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
@@ -704,7 +704,7 @@ public class FieldReaderClient {
                     }
                     numberOfWheels = Long.valueOf(data);
                 }
-                Validator.validateNumberOfWheelsVehicle(numberOfWheels);
+                ValidatorClient.validateNumberOfWheelsVehicle(numberOfWheels);
                 return numberOfWheels;
             }
             catch (NotExistException | ValueOutOfBoundsException e) {
@@ -747,7 +747,7 @@ public class FieldReaderClient {
                         throw new IllegalArgumentException("Несуществующая константа для поля 'type'!");
                     }
                 }
-                Validator.validateTypeVehicle(type);
+                ValidatorClient.validateTypeVehicle(type);
                 return type;
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
@@ -792,7 +792,7 @@ public class FieldReaderClient {
                         throw new IllegalArgumentException("Несуществующая константа для поля 'type'!");
                     }
                 }
-                Validator.validateTypeVehicle(type);
+                ValidatorClient.validateTypeVehicle(type);
                 return type;
             }
             catch (NotExistException e) {
@@ -886,6 +886,185 @@ public class FieldReaderClient {
             catch (WrongAmountOfElementsException | IllegalArgumentException e) {
                 throw new FieldReadException("Не удалось считать поле 'fuelType'! Поле 'fuelType' должно быть одной из констант набора " + Arrays.toString(FuelType.class.getEnumConstants()) +" !",e);
             }
+        }
+    }
+
+
+
+
+    public static Integer askPort(String argument)  {
+        try {
+            System.out.println("Введите целое число для поля 'port'");
+            if (!userScanner.hasNextLine()) {
+                throw new NoSuchElementException("Вы использовали Ctrl+D. Ввод прерван.");
+            }
+            String data = userScanner.nextLine();
+            Integer port;
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'port' указано более одного аргумента!");
+            }
+            if (data.isEmpty()) {
+                throw new NumberFormatException("Поле 'port' не может быть null!");
+            } else if (data.trim().isEmpty()) {
+                throw new NumberFormatException("Для поля 'port' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+            } else {
+                BigDecimal a;
+                try {
+                    data = data.replace(",", ".").trim();
+                    data = data.replaceAll("\\.0+$", "");
+                    a = new BigDecimal(data);
+                } catch (NumberFormatException e) {
+                    throw new NumberFormatException("");
+                }
+                if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
+                    throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
+                }
+                BigInteger b = new BigInteger(data);
+                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger endOfBounds = BigInteger.valueOf(65535);
+                if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
+                    throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
+                }
+                port = Integer.valueOf(data);
+            }
+            return port;
+        } catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+            return null;
+        } catch (WrongAmountOfElementsException | NumberFormatException e) {
+            System.out.println("Не удалось считать поле 'port'! Поле 'port' должно быть целым числом!" + " " + e.getMessage());
+            System.out.println("Повторите попытку ввода");
+            return askPort(null);
+        } catch (ValueOutOfBoundsException e) {
+            System.out.println("Не удалось считать поле 'port'!" + " " + e.getMessage());
+            System.out.println("Повторите попытку ввода");
+            return askPort(null);
+        }
+    }
+
+    public static Integer readPort(String argument)  {
+        try {
+            String data = argument;
+            Integer port;
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'port' указано более одного аргумента!");
+            }
+            if (data.isEmpty()) {
+                throw new NumberFormatException("Поле 'port' не может быть null!");
+            } else if (data.trim().isEmpty()) {
+                throw new NumberFormatException("Для поля 'port' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+            } else {
+                BigDecimal a;
+                try {
+                    data = data.replace(",", ".").trim();
+                    data = data.replaceAll("\\.0+$", "");
+                    a = new BigDecimal(data);
+                } catch (NumberFormatException e) {
+                    throw new NumberFormatException("");
+                }
+                if (a.remainder(BigDecimal.ONE) != BigDecimal.ZERO) {
+                    throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
+                }
+                BigInteger b = new BigInteger(data);
+                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger endOfBounds = BigInteger.valueOf(65535);
+                if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
+                    throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
+                }
+                port = Integer.valueOf(data);
+            }
+            return port;
+        } catch (WrongAmountOfElementsException | NumberFormatException e) {
+            System.out.println("Не удалось считать поле 'port'! Поле 'port' должно быть целым числом!" + " " + e.getMessage());
+            return askPort(null);
+        } catch (ValueOutOfBoundsException e) {
+            System.out.println("Не удалось считать поле 'port'!" + " " + e.getMessage());
+            return askPort(null);
+        }
+    }
+
+
+    public static String askHost(String argument)  {
+        try {
+            System.out.println("Введите адрес сервера для поля 'host'");
+            if (!userScanner.hasNextLine()) {
+                throw new NoSuchElementException("Вы использовали Ctrl+D. Ввод прерван.");
+            }
+
+            String data = userScanner.nextLine();
+
+            if (data.split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'host' указано более одного аргумента!");
+            }
+
+            if (data.isEmpty()) {
+                throw new IllegalArgumentException("Поле 'host' не может быть пустым!");
+            }
+            else if (data.trim().isEmpty()) {
+                throw new IllegalArgumentException("Для поля 'host' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+            }
+            String host = data.trim();
+
+            if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1")) {
+                return "localhost";
+            }
+
+            if (host.length() > 253) {
+                throw new ValueOutOfBoundsException("Адрес сервера слишком длинный (максимум 253 символа)!");
+            }
+
+             if (!host.matches("^[a-zA-Z0-9.\\-:\\[\\]]+$")) {
+                throw new IllegalArgumentException("Адрес сервера содержит недопустимые символы!");
+            }
+
+            return host;
+
+        } catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+            return null;
+
+        } catch (WrongAmountOfElementsException | IllegalArgumentException | ValueOutOfBoundsException e) {
+            System.out.println("Не удалось считать поле 'host'!" + " " + e.getMessage());
+            System.out.println("Повторите попытку ввода");
+            return askHost(null);   // рекурсия
+        }
+    }
+
+    public static String readHost(String argument)  {
+        try {
+            String data = argument;
+
+            if (data.split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Для поля 'host' указано более одного аргумента!");
+            }
+
+            if (data.isEmpty()) {
+                throw new IllegalArgumentException("Поле 'host' не может быть пустым!");
+            }
+            else if (data.trim().isEmpty()) {
+                throw new IllegalArgumentException("Для поля 'host' была введена последовательность, состоящая из 'пустых символов' (табуляция, пробелы и т.п.)!");
+            }
+            String host = data.trim();
+
+            if (host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1")) {
+                return "localhost";
+            }
+
+            if (host.length() > 253) {
+                throw new ValueOutOfBoundsException("Адрес сервера слишком длинный (максимум 253 символа)!");
+            }
+
+            if (!host.matches("^[a-zA-Z0-9.\\-:\\[\\]]+$")) {
+                throw new IllegalArgumentException("Адрес сервера содержит недопустимые символы!");
+            }
+
+            return host;
+
+        } catch (WrongAmountOfElementsException | IllegalArgumentException | ValueOutOfBoundsException e) {
+            System.out.println("Не удалось считать поле 'host'!" + " " + e.getMessage());
+            return askHost(null);   // рекурсия
         }
     }
 }

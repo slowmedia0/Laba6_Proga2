@@ -4,7 +4,9 @@ import common.ExitCodeCommand;
 import common.exceptions.ValidateDataException;
 import common.exceptions.WrongAmountOfElementsException;
 import server.utility.CollectionManager;
-import client.utility.Validator;
+import client.utility.ValidatorClient;
+import common.utility.ResponseBuilder;
+
 import java.util.NoSuchElementException;
 
 public class RemoveByIdCommand extends AbstractCommand{
@@ -49,7 +51,7 @@ public class RemoveByIdCommand extends AbstractCommand{
                 throw new WrongAmountOfElementsException("Коллекция пуста!");
             }
             Integer id = Integer.valueOf(argument);
-            if (Validator.validateIdVehicle(id, collectionManager.getCollection()) == false) {
+            if (ValidatorClient.validateIdVehicle(id, collectionManager.getCollection()) == false) {
                 throw new ValidateDataException("Введенное поле id не валидно!");
             }
             collectionManager.removeById(id);
@@ -57,18 +59,22 @@ public class RemoveByIdCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.OK;
         }
         catch (ValidateDataException e) {
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
         catch (IndexOutOfBoundsException e){
             System.out.println("Коллекция пуста!");
+            ResponseBuilder.appendLn("Коллекция пуста!");
             return ExitCodeCommand.OK;
         }
         catch (NoSuchElementException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.CTRL_D;
         }
     }
@@ -81,25 +87,29 @@ public class RemoveByIdCommand extends AbstractCommand{
                 throw new WrongAmountOfElementsException("Должен быть только один аргумент - поле 'id'!");
             }
             Integer id = Integer.valueOf(argument);
-            if (Validator.validateIdVehicle2(id) == false) {
+            if (ValidatorClient.validateIdVehicle2(id) == false) {
                 throw new ValidateDataException("Введенное поле id не валидно!");
             }
             return ExitCodeCommand.OK;
         }
         catch (NullPointerException e) {
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
         catch (NumberFormatException e) {
             System.out.println(e.getMessage() + " : Некорректный ввод поля id!");
+            ResponseBuilder.appendLn(e.getMessage() + " : Некорректный ввод поля id!");
             return ExitCodeCommand.ERROR;
         }
         catch (ValidateDataException e) {
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

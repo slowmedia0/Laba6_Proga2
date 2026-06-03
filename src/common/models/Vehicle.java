@@ -70,6 +70,7 @@ public class Vehicle implements Comparable<Vehicle>, Serializable {
         return this.name.compareTo(element.getName());
     }
 
+
     /**
      * Возвращает строковое представление объекта.
      *

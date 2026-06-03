@@ -3,6 +3,7 @@ package common.commands;
 import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
 import server.utility.CollectionManager;
+import common.utility.ResponseBuilder;
 
 
 public class PrintFieldDescendingNumberOfWheelsCommand extends AbstractCommand{
@@ -52,10 +53,12 @@ public class PrintFieldDescendingNumberOfWheelsCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.OK;
         }
         catch (IndexOutOfBoundsException e){
             System.out.println("Коллекция пуста!");
+            ResponseBuilder.appendLn("Коллекция пуста!");
             return ExitCodeCommand.OK;
         }
     }
@@ -70,6 +73,7 @@ public class PrintFieldDescendingNumberOfWheelsCommand extends AbstractCommand{
         }
         catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
              return ExitCodeCommand.ERROR;
         }
     }

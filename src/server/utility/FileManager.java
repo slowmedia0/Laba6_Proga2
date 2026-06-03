@@ -1,8 +1,7 @@
 package server.utility;
 
 import common.exceptions.FieldReadException;
-import common.exceptions.NotExistException;
-import client.utility.Validator;
+import common.utility.ResponseBuilder;
 import common.utility.Serializer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -188,7 +187,7 @@ public class FileManager {
                 throw new IllegalArgumentException("Записываемые данные пусты!");
             }
             fos.write(xml.toString().getBytes("UTF-8"));
-            ResponseBuilder.appendSuccess("Коллекция успешно сохранена в файл");
+            ResponseBuilder.append("Коллекция успешно сохранена в файл");
             return true;
         } catch (FileNotFoundException e) {
             ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
@@ -221,12 +220,10 @@ public class FileManager {
         }
     }
 
-    /**
-     * Возвращает байты актуального файла коллекции для отправки клиенту
-     */
+
     public byte[] getCollectionAsBytes() {
         try {
-            writeCollection(); // обязательно сохраняем перед чтением
+            writeCollection();
 
             if (loadFile != null && loadFile.exists()) {
                 return Files.readAllBytes(loadFile.toPath());
@@ -240,11 +237,10 @@ public class FileManager {
     public void loadFromBytes(byte[] data) {
         ResponseBuilder.clear();
         try {
-            @SuppressWarnings("unchecked")
             Stack<Vehicle> loadedCollection = (Stack<Vehicle>) Serializer.deserialize(data);
             collectionManager.setCollection(loadedCollection);
             collectionManager.initializeArrayId();
-            ResponseBuilder.append("Коллекция успешно загружена из байтов (" + loadedCollection.size() + " элементов)");
+            ResponseBuilder.appendLn("Коллекция успешно загружена из байтов (" + loadedCollection.size() + " элементов)");
         } catch (Exception e) {
             ResponseBuilder.appendLn("Ошибка загрузки коллекции из байтов: " + e.getMessage());
         }

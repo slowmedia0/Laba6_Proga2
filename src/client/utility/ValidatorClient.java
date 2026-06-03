@@ -12,7 +12,7 @@ import java.util.Stack;
 /**
  * Класс валидации данных.
  */
-public class Validator {
+public class ValidatorClient {
 
     /**
      * Проверяет корректность поля coordinates.

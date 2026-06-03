@@ -3,6 +3,7 @@ package server.utility;
 import common.ExitCodeCommand;
 import common.models.*;
 import common.exceptions.*;
+import common.utility.ResponseBuilder;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -72,33 +73,28 @@ public class Console {
         flagReadCollection = true;
         flagScript = false;
 
-        ResponseBuilder.clear(); // очищаем перед загрузкой
+        ResponseBuilder.clear();
 
         try {
-            ResponseBuilder.append("Загрузка коллекции из файла: " + loadFile.getName());
+            ResponseBuilder.appendLn("Загрузка коллекции из файла: " + loadFile.getName());
 
-            // Чтение коллекции
             collectionManager.setCollection(fileManager.readCollection(loadFile));
-            // Инициализация вспомогательных структур
             collectionManager.initializeArrayId();
             collectionManager.setCreationDate(java.time.LocalDate.now());
 
             int size = collectionManager.getCollection().size();
 
-            ResponseBuilder.append("Коллекция успешно загружена. Количество элементов: " + size);
+            ResponseBuilder.appendLn("Коллекция успешно загружена на сервере. Количество элементов: " + size);
 
         } catch (Exception e) {
-            ResponseBuilder.appendLn("КРИТИЧЕСКАЯ ОШИБКА при загрузке коллекции из файла " + loadFile.getName());
-            ResponseBuilder.appendLn("Ошибка: " + e.getMessage());
+            ResponseBuilder.appendLn("Ошибка при загрузке коллекции из файла " + loadFile.getName() + ": " + e.getMessage());
             throw e;
         } finally {
             flagReadCollection = false;
         }
     }
 
-    /**
-     * Загрузка коллекции из байтов, пришедших от клиента
-     */
+
     public ExitCodeCommand loadCollectionFromBytes(String fileName, byte[] fileData) {
         ResponseBuilder.clear();
 
@@ -109,7 +105,6 @@ public class Console {
             Files.write(tempFile.toPath(), fileData);
             loadCollection(tempFile);
 
-            ResponseBuilder.append("Коллекция успешно загружена из данных клиента.");
             return ExitCodeCommand.OK;
 
         } catch (Exception e) {
@@ -118,10 +113,6 @@ public class Console {
         }
     }
 
-    public void sortCollectionIfNeeded(String commandName) {
-        collectionManager.sortByName();
-        ResponseBuilder.append("Коллекция отсортирована по имени после команды: " + commandName);
-    }
 
     public ExitCodeCommand launchCommand(String mnemonics, String argument) {
         try {

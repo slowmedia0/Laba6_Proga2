@@ -3,6 +3,8 @@ package common.commands;
 import common.ExitCodeCommand;
 import common.exceptions.WrongAmountOfElementsException;
 import server.utility.CollectionManager;
+import common.utility.ResponseBuilder;
+
 import java.util.regex.Pattern;
 
 public class ClearCommand extends AbstractCommand {
@@ -53,6 +55,7 @@ public class ClearCommand extends AbstractCommand {
             return ExitCodeCommand.OK;
         } catch (WrongAmountOfElementsException e){
             System.out.println(e.getMessage());
+            ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.ERROR;
         }
     }

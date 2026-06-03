@@ -2,37 +2,28 @@ package server.utility;
 
 import common.exceptions.NotExistException;
 import common.models.Vehicle;
+import common.utility.ResponseBuilder;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Менеджер коллекции транспортных средств.
  */
 public class CollectionManager {
 
-    /** Коллекция объектов Vehicle */
     private Stack<Vehicle> C = new Stack<>();
-
-    /** Дата создания коллекции */
     private LocalDate creationDate;
-
-    /** Список занятых идентификаторов */
     private ArrayList<Integer> arrayId = new ArrayList<>();
-
-    /** Последний использованный индекс для генерации id */
     private Integer recentId = 0;
 
-    /**
-     * Инициализирует список идентификаторов на основе текущей коллекции.
-     */
     public void initializeArrayId() {
         arrayId.clear();
-        for (Vehicle v : C) {
-            if (v.getId() != null) {
-                arrayId.add(v.getId());
-            }
-        }
+        arrayId.addAll(C.stream()
+                .map(Vehicle::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList()));
         Collections.sort(arrayId);
     }
 
@@ -56,12 +47,11 @@ public class CollectionManager {
         return creationDate;
     }
 
-    // ==================== Методы с использованием ResponseBuilder ====================
 
     public void infoAboutCollection() {
         ResponseBuilder.clear();
         ResponseBuilder.append("Тип коллекции: " + C.getClass().getSimpleName());
-        ResponseBuilder.append("Дата создания: " + (creationDate != null ? creationDate : "не установлена"));
+        ResponseBuilder.append("Дата создания: " + creationDate);
         ResponseBuilder.append("Количество элементов: " + C.size());
     }
 
@@ -72,65 +62,52 @@ public class CollectionManager {
             return;
         }
 
+        String elements = C.stream()
+                .map(Vehicle::toString)
+                .collect(Collectors.joining("\n"));
+
         ResponseBuilder.append("Элементы коллекции (" + C.size() + " шт.):");
-        for (Vehicle vehicle : C) {
-            ResponseBuilder.append(vehicle.toString());
-        }
+        ResponseBuilder.append(elements);
     }
 
-    public void sortByName() {
-        if (C.isEmpty()) return;
+    // ==================== Stream API в остальных командах ====================
 
-        List<Vehicle> list = new ArrayList<>(C);
-        list.sort(Comparator.comparing(Vehicle::getName, Comparator.nullsLast(String::compareTo)));
-
-        C.clear();
-        C.addAll(list);
-
-        ResponseBuilder.append("Коллекция успешно отсортирована по полю 'name'.");
-    }
 
     public void sumEnginePower() {
         ResponseBuilder.clear();
-        float sum = 0;
-        for (Vehicle v : C) {
-            sum += v.getEnginePower();
-        }
+        double sum = C.stream()
+                .mapToDouble(Vehicle::getEnginePower)
+                .sum();
         ResponseBuilder.append("Сумма enginePower всех элементов: " + sum);
     }
 
     public void printAscendingNumberOfWheels() {
         ResponseBuilder.clear();
-        List<Long> wheels = new ArrayList<>();
-        for (Vehicle v : C) {
-            if (v.getNumberOfWheels() != null) {
-                wheels.add(v.getNumberOfWheels());
-            }
-        }
-        Collections.sort(wheels);
-        ResponseBuilder.append("Количество колёс по возрастанию: " + wheels);
+        List<Long> wheels = C.stream()
+                .map(Vehicle::getNumberOfWheels)
+                .filter(Objects::nonNull)
+                .sorted()
+                .collect(Collectors.toList());
+        ResponseBuilder.append("Количество колес по возрастанию: " + wheels);
     }
 
     public void printDescendingNumberOfWheels() {
         ResponseBuilder.clear();
-        List<Long> wheels = new ArrayList<>();
-        for (Vehicle v : C) {
-            if (v.getNumberOfWheels() != null) {
-                wheels.add(v.getNumberOfWheels());
-            }
-        }
-        wheels.sort(Collections.reverseOrder());
-        ResponseBuilder.append("Количество колёс по убыванию: " + wheels);
+        List<Long> wheels = C.stream()
+                .map(Vehicle::getNumberOfWheels)
+                .filter(Objects::nonNull)
+                .sorted(Comparator.reverseOrder())
+                .collect(Collectors.toList());
+        ResponseBuilder.append("Количество колес по убыванию: " + wheels);
     }
 
-    // ==================== Методы изменения коллекции ====================
 
     public Stack<Vehicle> addToCollection(Vehicle vehicle) {
         if (vehicle == null) return C;
 
         vehicle.setId(generateId());
         C.add(vehicle);
-        ResponseBuilder.append("Элемент успешно добавлен в коллекцию. ID = " + vehicle.getId());
+        ResponseBuilder.append("Элемент успешно добавлен в коллекцию. Присвоен id = " + vehicle.getId());
         return C;
     }
 
@@ -140,32 +117,29 @@ public class CollectionManager {
                 element.setId(id);
                 element.setCreationDate(C.get(i).getCreationDate());
                 element.setLastUpdateDate(LocalDate.now());
-
                 C.set(i, element);
-                ResponseBuilder.append("Элемент с ID " + id + " успешно обновлён.");
+                ResponseBuilder.append("Элемент с id = " + id + " успешно обновлён.");
                 return C;
             }
         }
-        throw new NotExistException("Элемент с ID " + id + " не найден!");
+        throw new NotExistException("Элемент с id = " + id + " не найден в коллекции!");
     }
 
     public Stack<Vehicle> removeById(Integer id) {
-        for (int i = 0; i < C.size(); i++) {
-            if (C.get(i).getId().equals(id)) {
-                C.remove(i);
-                arrayId.remove(id);
-                ResponseBuilder.append("Элемент с ID " + id + " успешно удалён.");
-                return C;
-            }
+        boolean removed = C.removeIf(v -> Objects.equals(v.getId(), id));
+        if (removed) {
+            arrayId.remove(id);
+            ResponseBuilder.append("Элемент с id = " + id + " успешно удалён.");
+        } else {
+            ResponseBuilder.append("Элемент с id = " + id + " не найден в коллекции");
         }
-        ResponseBuilder.appendLn("Элемент с ID " + id + " не найден.");
-        throw new NoSuchElementException("Элемент с ID " + id + " не найден!");
+        return C;
     }
 
     public Stack<Vehicle> clearCollection() {
         C.clear();
         arrayId.clear();
-        ResponseBuilder.append("Коллекция успешно очищена.");
+        ResponseBuilder.append("Коллекция успешно очищена");
         return C;
     }
 
@@ -173,7 +147,7 @@ public class CollectionManager {
         if (element == null) return C;
 
         C.removeIf(v -> v.compareTo(element) > 0);
-        ResponseBuilder.append("Элементы, превышающие заданный, успешно удалены.");
+        ResponseBuilder.append("Элементы, превышающие заданный, успешно удалены");
         return C;
     }
 
@@ -182,16 +156,19 @@ public class CollectionManager {
         Collections.reverse(list);
         C.clear();
         C.addAll(list);
-        ResponseBuilder.append("Коллекция успешно переупорядочена (в обратном порядке).");
+        ResponseBuilder.append("Коллекция успешно отсортирована в обратном порядке");
         return C;
     }
 
     public Stack<Vehicle> sortCollection() {
-        sortByName(); // используем уже существующий метод
+        List<Vehicle> list = new ArrayList<>(C);
+        Collections.sort(list);
+        C.clear();
+        C.addAll(list);
+        ResponseBuilder.append("Коллекция успешно отсортирована в естественном порядке");
         return C;
     }
 
-    // ==================== Генерация ID ====================
 
     public Integer generateId() {
         return generateId(arrayId);
