@@ -50,7 +50,6 @@ public class SortCommand extends AbstractCommand{
             return ExitCodeCommand.OK;
         }
         catch (WrongAmountOfElementsException e){
-            System.out.println(e.getMessage());
             ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.OK;
         }

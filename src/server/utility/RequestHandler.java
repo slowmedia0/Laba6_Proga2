@@ -11,16 +11,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.Selector;
 
-
 public class RequestHandler {
 
-    private static final int BUFFER_SIZE = 65536;
-
+    private static final int BUFFER_SIZE = 262144;
 
     public static void handleRequest(DatagramChannel channel, Selector selector,
                                      Console console, FileManager fileManager) {
-
-        ResponseBuilder.clear();
         SocketAddress clientAddress = null;
         try {
             ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -36,24 +32,12 @@ public class RequestHandler {
 
             System.out.println("<- Получен запрос: " + request.getNameOfCommand() + " от " + clientAddress);
 
-            Response response;
-            String cmd = request.getNameOfCommand().toLowerCase().trim();
+            Response response = processCommand(request, console);
 
-            ResponseBuilder.clear();
-
-            if ("load_file".equals(cmd)) {
-                response = handleLoadFile(request, console);
-            }
-            else {
-                response = processCommand(request, console);
-            }
-
-
+            // Просто передаём ответ дальше (сжатие будет в ResponseSender)
             ResponseSender.sendResponse(channel, clientAddress, response);
 
-
         } catch (Exception e) {
-            ResponseBuilder.clear();
             ResponseBuilder.appendLn("Критическая ошибка сервера: " + e.getMessage());
 
             Response errorResponse = new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
@@ -66,36 +50,8 @@ public class RequestHandler {
 
             e.printStackTrace();
         }
+        ResponseBuilder.clear();
     }
-
-
-    private static Response handleLoadFile(CommandRequest request, Console console) {
-        try {
-            String fileName = request.getFileName();
-            byte[] fileData = request.getFileData();
-
-            if (fileName == null || fileData == null) {
-                ResponseBuilder.appendLn("Не переданы данные файла");
-                return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
-            }
-
-            ExitCodeCommand result = console.loadCollectionFromBytes(fileName, fileData);
-
-            if (result == ExitCodeCommand.OK) {
-                ResponseBuilder.append("Файл успешно загружен и инициализирована");
-            } else {
-                ResponseBuilder.appendLn("Не удалось загрузить файл");
-            }
-
-            return new Response(result, ResponseBuilder.getOutput());
-
-        } catch (Exception e) {
-            ResponseBuilder.appendLn("Ошибка при загрузке файла: " + e.getMessage());
-            return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
-        }
-    }
-
-
 
     private static Response processCommand(CommandRequest request, Console console) {
         try {

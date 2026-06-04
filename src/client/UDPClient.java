@@ -3,12 +3,10 @@ package client;
 import common.ExitCodeCommand;
 import common.commands.CommandRequest;
 import common.interaction.Response;
+import common.utility.GZIPUtils;
 import common.utility.Serializer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InvalidClassException;
-import java.io.StreamCorruptedException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
@@ -24,16 +22,15 @@ public class UDPClient {
     private DatagramChannel channel;
     private Selector selector;
 
-    private static final int BUFFER_SIZE = 65536;
-    private static final int TIMEOUT_MS = 3000;
+    private static final int BUFFER_SIZE = 262144;
+    private static final int TIMEOUT_MS = 5000;
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 300;
-
-    private static final byte[] END_MARKER = {0x0A, 0x0B, 0x0C, 0x0D};
 
     public UDPClient(String host, int port) {
         this.host = host;
         this.port = port;
+        System.out.println("Клиент успешно запущен");
     }
 
     public void connect() throws IOException {
@@ -46,8 +43,6 @@ public class UDPClient {
         if (selector != null) selector.close();
         selector = Selector.open();
         channel.register(selector, SelectionKey.OP_READ);
-
-        System.out.println("Клиент подключён к " + host + ":" + port);
     }
 
     public Response sendRequest(CommandRequest request) {
@@ -60,15 +55,12 @@ public class UDPClient {
                 }
 
                 byte[] data = Serializer.serialize(request);
+
                 System.out.println("-> [" + (attempts + 1) + "/" + MAX_RETRIES + "] "
                         + request.getNameOfCommand() + " (" + data.length + " байт)");
 
-                if (data.length > BUFFER_SIZE - 2048) {
-                    return sendWithChunks(data);
-                } else {
-                    channel.write(ByteBuffer.wrap(data));
-                    return receiveResponseFast();
-                }
+                channel.write(ByteBuffer.wrap(data));
+                return receiveResponseFast();
 
             } catch (PortUnreachableException e) {
                 attempts++;
@@ -84,25 +76,6 @@ public class UDPClient {
         }
 
         return new Response(ExitCodeCommand.ERROR, "Сервер временно недоступен.");
-    }
-
-    private Response sendWithChunks(byte[] data) throws IOException {
-        int totalChunks = (data.length + BUFFER_SIZE - 1) / BUFFER_SIZE;
-        System.out.println("   -> Чанкирование (" + totalChunks + " пакетов)");
-
-        for (int i = 0; i < totalChunks; i++) {
-            int offset = i * BUFFER_SIZE;
-            int length = Math.min(BUFFER_SIZE, data.length - offset);
-
-            ByteBuffer chunk = ByteBuffer.allocate(length + 4);
-            chunk.putInt(i);
-            chunk.put(data, offset, length);
-            chunk.flip();
-            channel.write(chunk);
-        }
-
-        channel.write(ByteBuffer.wrap(END_MARKER));
-        return receiveResponseFast();
     }
 
     private Response receiveResponseFast() throws IOException {
@@ -126,36 +99,36 @@ public class UDPClient {
                 byte[] data = new byte[buf.remaining()];
                 buf.get(data);
 
-                if (data.length >= END_MARKER.length &&
-                        java.util.Arrays.equals(
-                                java.util.Arrays.copyOfRange(data, data.length - END_MARKER.length, data.length),
-                                END_MARKER)) {
+                // Основная логика: сначала пробуем обычный ответ, потом — сжатый
+                Response response = tryDeserialize(data);
 
-                    if (data.length > END_MARKER.length) {
-                        byte[] cleanData = new byte[data.length - END_MARKER.length];
-                        System.arraycopy(data, 0, cleanData, 0, cleanData.length);
-                        data = cleanData;
-                    } else {
-                        data = new byte[0];
-                    }
+                if (response == null) {
+                    // Пробуем распаковать как GZIP
+                    try {
+                        byte[] decompressed = GZIPUtils.decompress(data);
+                        response = tryDeserialize(decompressed);
+                        if (response != null) {
+                            System.out.println("Ответ распакован GZIP");
+                        }
+                    } catch (Exception ignored) {}
                 }
 
-                try {
-                    Response response = (Response) Serializer.deserialize(data);
+                if (response != null) {
                     System.out.println("<- Ответ получен (" + data.length + " байт)");
                     return response;
-                } catch (ClassNotFoundException e) {
-                    System.err.println("Ошибка десериализации: Несовместимость версий");
-                } catch (InvalidClassException e) {
-                    System.err.println("Ошибка десериализации: Несовместимость классов");
-                } catch (StreamCorruptedException e) {
-                    System.err.println("Ошибка десериализации: Данные повреждены");
-                } catch (Exception e) {
-                    System.err.println("Ошибка десериализации");
                 }
             }
         }
         return null;
+    }
+
+    // Вспомогательный метод
+    private Response tryDeserialize(byte[] data) {
+        try {
+            return (Response) Serializer.deserialize(data);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public void close() {

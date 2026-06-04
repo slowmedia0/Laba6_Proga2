@@ -1,35 +1,46 @@
 package server;
 
 
+import client.utility.FieldReaderClient;
+import client.utility.FileManagerClient;
+import client.utility.ValidatorClient;
+import common.ExitCodeCommand;
 import common.commands.*;
 import server.utility.*;
 import server.utility.FileManager;
 
-public class App {
+import java.io.File;
 
+public class App {
+    static Console console;
     public static void main(String[] args) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (console!=null & !console.isFlagReadCollection()) {
+                console.launchCommand("exit", "");
+            }
             System.out.println("Завершение работы сервера");
         }));
-
-        if (args.length != 1) {
-            System.out.println("Необходимо указать один аргумент!");
-            System.out.println("Использование: java -jar server.jar <port>");
-            System.out.println("Пример корректного использования: java -jar server.jar 2222");
+/*
+        if (args.length != 2) {
+            System.out.println("Необходимо указать два аргумента!");
+            System.out.println("Использование: java -jar client.jar <port> <filename>");
+            System.out.println("Пример корректного использования: java -jar client.jar 2222 input_data.xml");
             System.exit(1);
         }
 
-
-
-
         Integer port = FieldReaderServer.readPort(args[0]);
+        String nameOfFile = args[1];
+        while (ValidatorClient.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_COLLECTION)==false){
+            nameOfFile= FieldReaderServer.askFile();
+        }
 
-
+ */
+        int port = 2222;
+        String nameOfFile="src\\input_data.xml";
 
         try {
             CollectionManager collectionManager = new CollectionManager();
             FileManager fileManager = new FileManager(collectionManager);
-
             CommandManger commandManger = new CommandManger(
                     new HelpCommand(),
                     new InfoCommand(collectionManager),
@@ -47,14 +58,13 @@ public class App {
                     new PrintFieldAscendingNumberOfWheelsCommand(collectionManager),
                     new PrintFieldDescendingNumberOfWheelsCommand(collectionManager)
             );
-            Console console = new Console(commandManger, fileManager, collectionManager);
-
+            console = new Console(commandManger, fileManager, collectionManager);
             commandManger.getExitCommand().setFileManager(fileManager);
             FieldReaderServer.setConsole(console);
 
+            console.loadCollection(new File(nameOfFile));
 
             UDPServer server = new UDPServer(console, fileManager,port);
-            System.out.println("Сервер успешно запущен");
 
             server.start();
 

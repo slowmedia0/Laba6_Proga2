@@ -19,8 +19,6 @@ public class UserHandler {
     public ExitCodeCommand ExitCodeCommandStatus = ExitCodeCommand.CTRL_C;
     private UDPClient udpClient;
     private Scanner userScanner;
-    private  String loadFileName;
-    private  byte[] loadFileData;
     private ArrayList<String> arguments;
     private boolean flagScript;
     private boolean flagReadCollection;
@@ -43,15 +41,19 @@ public class UserHandler {
     }
     private Response sendAndCheck(CommandRequest request) {
         Response response = udpClient.sendRequest(request);
-        if (response == null || !response.isSuccess()) {
-            if (response != null && response.getMessage() != null) {
+
+        if (response == null) {
+            System.out.println("Сервер временно недоступен. Нет ответа.");
+            return null;
+        }
+        if (!response.isSuccess()) {
+            if (request.getNameOfCommand().equalsIgnoreCase("exit")) {
                 System.out.println(response.getMessage());
-            } else {
-                System.out.println("Сервер временно недоступен.");
+                System.out.println("Клиент завершает работу.");
+                udpClient.close();
+                System.exit(0);
             }
-            System.out.println("Клиент завершает работу.");
-            udpClient.close();
-            System.exit(1);
+            return response;
         }
         return response;
     }
@@ -60,13 +62,7 @@ public class UserHandler {
         return udpClient;
     }
 
-    public String getLoadFileName() {
-        return loadFileName;
-    }
 
-    public byte[] getLoadFileData() {
-        return loadFileData;
-    }
 
     public ArrayList<String> getFields() {
         return fields;
@@ -202,21 +198,7 @@ public class UserHandler {
         return (response != null && response.isSuccess()) ? ExitCodeCommand.OK : ExitCodeCommand.ERROR;
     }
 
-    public void interactiveMode(String nameOfLoadFile) {
-        String nameOfFile=nameOfLoadFile;
-        while (ValidatorClient.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_COLLECTION)==false){
-            nameOfFile= FieldReaderClient.askFile();
-        }
-        this.loadFileName=nameOfFile;
-        try{
-            File file = new File(nameOfFile);
-            this.loadFileData = Files.readAllBytes(file.toPath());
-        } catch (IOException e) {
-            System.out.println("Ошибка чтения загрузочного файла: " + e.getMessage());
-            this.loadFileData = new byte[0];
-        }
-
-        sendLoadFileToServer();
+    public void interactiveMode() {
         flagReadCollection=false;
 
         try {
@@ -316,19 +298,6 @@ public class UserHandler {
         return (response != null && response.isSuccess()) ? ExitCodeCommand.OK : ExitCodeCommand.ERROR;
     }
 
-    private void sendLoadFileToServer() {
-        try {
-            System.out.println("Отправка загрузочного файла на сервер: " + loadFileName);
-            CommandRequest loadRequest = new CommandRequest("load_file", loadFileName, loadFileName, loadFileData);
-            Response response = sendAndCheck(loadRequest);   // ← минимальное изменение
-
-            if (response != null && response.isSuccess()) {
-                System.out.println("Загрузочный файл успешно доставлен на сервер.");
-            }
-        } catch (Exception e) {
-            System.out.println("Ошибка отправки загрузочного файла: " + e.getMessage());
-        }
-    }
 
     public Command createCommand(String mnemonics, String argument){
         try {
@@ -386,15 +355,6 @@ public class UserHandler {
         }
 
         System.out.println(response.getMessage());
-
-        if (response.getFileData() != null && response.getFileData().length > 0 && loadFileName != null) {
-            try {
-                Files.write(new File(loadFileName).toPath(), response.getFileData());
-                System.out.println("Обновленную коллекцию можете увидеть в файле: " + loadFileName);
-            } catch (IOException e) {
-                System.out.println("Не удалось сохранить файл на клиенте: " + e.getMessage());
-            }
-        }
         System.out.println("Клиент завершает работу.");
         udpClient.close();
         ExitCodeCommandStatus = ExitCodeCommand.EXIT;

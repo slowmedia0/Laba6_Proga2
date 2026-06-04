@@ -3,15 +3,9 @@ package server;
 import server.utility.Console;
 import server.utility.FileManager;
 import server.utility.RequestHandler;
-import server.utility.ResponseSender;
-import common.commands.CommandRequest;
-import common.interaction.Response;
-import common.utility.Serializer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -23,7 +17,7 @@ import java.util.Iterator;
 public class UDPServer {
 
     private static int PORT;
-    private static final int BUFFER_SIZE = 65536;
+    private static final int BUFFER_SIZE = 262144; // увеличен
 
     private final DatagramChannel channel;
     private final Selector selector;
@@ -31,11 +25,11 @@ public class UDPServer {
     private final Console console;
     private final FileManager fileManager;
 
-
-    public UDPServer(Console console, FileManager fileManager,  int port) throws IOException {
+    public UDPServer(Console console, FileManager fileManager, int port) throws IOException {
         this.console = console;
         this.fileManager = fileManager;
-        this.PORT=port;
+        this.PORT = port;
+
         this.channel = DatagramChannel.open();
         this.channel.configureBlocking(false);
         this.channel.bind(new InetSocketAddress(PORT));
@@ -43,7 +37,8 @@ public class UDPServer {
         this.selector = Selector.open();
         this.channel.register(selector, SelectionKey.OP_READ);
 
-        System.out.println("Сервер запускается на порту " + PORT);
+        System.out.println("Сервер успешно запущен на порту " + PORT);
+        System.out.println("Ожидаем подключений");
     }
 
     public void start() {

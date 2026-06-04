@@ -52,12 +52,10 @@ public class PrintFieldDescendingNumberOfWheelsCommand extends AbstractCommand{
             return ExitCodeCommand.OK;
         }
         catch (WrongAmountOfElementsException e){
-            System.out.println(e.getMessage());
             ResponseBuilder.appendLn(e.getMessage());
             return ExitCodeCommand.OK;
         }
         catch (IndexOutOfBoundsException e){
-            System.out.println("Коллекция пуста!");
             ResponseBuilder.appendLn("Коллекция пуста!");
             return ExitCodeCommand.OK;
         }

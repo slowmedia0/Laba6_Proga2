@@ -14,32 +14,25 @@ import java.util.StringJoiner;
  * Главный класс клиентского приложения
  */
 public class App {
+    static UserHandler userHandler;
     public static void main(String[] args) {
-
-        /*
-        if (args.length != 3) {
-            System.out.println("Необходимо указать три аргумента!");
-            System.out.println("Использование: java -jar client.jar <host> <port> <filename>");
+/*
+        if (args.length != 2) {
+            System.out.println("Необходимо указать два аргумента!");
+            System.out.println("Использование: java -jar client.jar <host> <port>");
             System.out.println("Пример корректного использования: java -jar client.jar localhost 2222 input_data.xml");
             System.exit(1);
         }
         String host = FieldReaderClient.readHost(args[0]);
         Integer port = FieldReaderClient.readPort(args[1]);
-        String filename = args[2];
-        */
 
+ */
+        String host = "localhost";
+        int port = 2222;
 
-
-
-
-        String host = "helios.cs.ifmo.ru";
-        int port = 4000;
-        String filename = "src\\input_data.xml";
 
 
         System.out.println("Клиент запускается");
-        System.out.println("Сервер: " + host + ":" + port);
-        System.out.println("Загрузочный файл: " + filename);
 
         try (Scanner scanner = new Scanner(System.in)) {
 
@@ -47,19 +40,24 @@ public class App {
             udpClient.connect();
             FileManagerClient fileManagerClient = new FileManagerClient();
 
-            UserHandler userHandler = new UserHandler(udpClient, scanner,fileManagerClient);
+            userHandler = new UserHandler(udpClient, scanner,fileManagerClient);
 
             FieldReaderClient.setUserHandler(userHandler);
 
 
-            userHandler.interactiveMode(filename);
+            userHandler.interactiveMode();
 
             Thread mainThread = Thread.currentThread();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                if (userHandler.getExitCodeCommandStatus().equals(ExitCodeCommand.CTRL_C)) {
-                    System.out.println("Вы использовали Ctrl+C.");
+                if (userHandler!=null) {
+                    if (userHandler.getExitCodeCommandStatus().equals(ExitCodeCommand.CTRL_C)) {
+                        System.out.println("Вы использовали Ctrl+C.");
+                    }
+                    userHandler.handleExitResponse(udpClient.sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit", ""))));
                 }
-                userHandler.handleExitResponse(udpClient.sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+                else {
+                    System.out.println("Клиент завершает работу");
+                }
             }));
 
         } catch (Exception e) {

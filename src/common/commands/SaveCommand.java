@@ -22,7 +22,7 @@ public class SaveCommand extends AbstractCommand {
     }
 
     public ExitCodeCommand execute(){
-        System.out.println("Выполняется сохранение коллекции");
+        System.out.println("Выполняется сохранение коллекции в файл " + fileManager.getLoadFile());
         fileManager.writeCollection();
         return ExitCodeCommand.OK;
     }

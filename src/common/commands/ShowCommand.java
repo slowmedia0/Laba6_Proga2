@@ -49,13 +49,11 @@ public class ShowCommand extends AbstractCommand {
             collectionManager.showElementsOfCollection();
             return ExitCodeCommand.OK;
         } catch (IndexOutOfBoundsException e) {
-            System.out.println("Коллекция пуста!");
             ResponseBuilder.appendLn("Коллекция пуста!");
             return ExitCodeCommand.OK;
         }
         catch (WrongAmountOfElementsException e) {
             ResponseBuilder.appendLn(e.getMessage());
-            System.out.println(e.getMessage());
             return ExitCodeCommand.OK;
         }
     }

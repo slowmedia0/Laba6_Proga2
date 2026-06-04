@@ -72,45 +72,13 @@ public class Console {
         this.currentLoadFile = loadFile;
         flagReadCollection = true;
         flagScript = false;
-
-        ResponseBuilder.clear();
-
-        try {
-            ResponseBuilder.appendLn("Загрузка коллекции из файла: " + loadFile.getName());
-
-            collectionManager.setCollection(fileManager.readCollection(loadFile));
-            collectionManager.initializeArrayId();
-            collectionManager.setCreationDate(java.time.LocalDate.now());
-
-            int size = collectionManager.getCollection().size();
-
-            ResponseBuilder.appendLn("Коллекция успешно загружена на сервере. Количество элементов: " + size);
-
-        } catch (Exception e) {
-            ResponseBuilder.appendLn("Ошибка при загрузке коллекции из файла " + loadFile.getName() + ": " + e.getMessage());
-            throw e;
-        } finally {
-            flagReadCollection = false;
-        }
-    }
-
-
-    public ExitCodeCommand loadCollectionFromBytes(String fileName, byte[] fileData) {
-        ResponseBuilder.clear();
-
-        try {
-            this.loadFileName = fileName;
-            this.loadFileData = fileData;
-            File tempFile = new File(fileName);
-            Files.write(tempFile.toPath(), fileData);
-            loadCollection(tempFile);
-
-            return ExitCodeCommand.OK;
-
-        } catch (Exception e) {
-            ResponseBuilder.appendLn("Ошибка загрузки коллекции из байтов: " + e.getMessage());
-            return ExitCodeCommand.ERROR;
-        }
+        System.out.println("Считываю коллекцию из загрузочного файла...");
+        collectionManager.setCollection(fileManager.readCollection(loadFile));
+        System.out.println("Коллекция успешно считана из загрузочного файла!");
+        collectionManager.initializeArrayId();
+        collectionManager.setCreationDate(java.time.LocalDate.now());
+        int size = collectionManager.getCollection().size();
+        flagReadCollection = false;
     }
 
 

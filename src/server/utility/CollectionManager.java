@@ -49,14 +49,14 @@ public class CollectionManager {
 
 
     public void infoAboutCollection() {
-        ResponseBuilder.clear();
+        
         ResponseBuilder.append("Тип коллекции: " + C.getClass().getSimpleName());
         ResponseBuilder.append("Дата создания: " + creationDate);
         ResponseBuilder.append("Количество элементов: " + C.size());
     }
 
     public void showElementsOfCollection() {
-        ResponseBuilder.clear();
+        
         if (C.isEmpty()) {
             ResponseBuilder.append("Коллекция пуста.");
             return;
@@ -74,7 +74,7 @@ public class CollectionManager {
 
 
     public void sumEnginePower() {
-        ResponseBuilder.clear();
+        
         double sum = C.stream()
                 .mapToDouble(Vehicle::getEnginePower)
                 .sum();
@@ -82,7 +82,7 @@ public class CollectionManager {
     }
 
     public void printAscendingNumberOfWheels() {
-        ResponseBuilder.clear();
+        
         List<Long> wheels = C.stream()
                 .map(Vehicle::getNumberOfWheels)
                 .filter(Objects::nonNull)
@@ -92,7 +92,7 @@ public class CollectionManager {
     }
 
     public void printDescendingNumberOfWheels() {
-        ResponseBuilder.clear();
+        
         List<Long> wheels = C.stream()
                 .map(Vehicle::getNumberOfWheels)
                 .filter(Objects::nonNull)

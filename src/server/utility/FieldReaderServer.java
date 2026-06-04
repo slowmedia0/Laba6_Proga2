@@ -1,5 +1,6 @@
 package server.utility;
 
+import common.ExitCodeCommand;
 import common.exceptions.*;
 import common.models.*;
 import common.utility.ResponseBuilder;
@@ -35,6 +36,28 @@ public class FieldReaderServer {
     private static void printErrorIfNotScript(String message) {
         if (!console.isFlagScript() && !console.isFlagReadCollection()) {
             ResponseBuilder.appendLn(message);
+        }
+    }
+
+    public static String askFile(){
+        try {
+            System.out.println("Введите имя файла или его путь");
+            if (!userScanner.hasNextLine()) {
+                throw new NoSuchElementException("Вы использовали Ctrl+D. Ввод прерван.");
+            }
+            String data = userScanner.nextLine().trim();
+            if (data.trim().split("\\s+").length > 1) {
+                throw new WrongAmountOfElementsException("Вы указали больше одного файла, а надо один!");
+            }
+            return data;
+        } catch (NoSuchElementException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+            return null;
+        } catch (WrongAmountOfElementsException e) {
+            System.out.println(e.getMessage());
+            System.out.println("Повторите попытку ввода");
+            return askFile();
         }
     }
 
@@ -361,7 +384,7 @@ public class FieldReaderServer {
                     throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
                 }
                 BigInteger b = new BigInteger(data);
-                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger startOfBounds = BigInteger.valueOf(1024);
                 BigInteger endOfBounds = BigInteger.valueOf(65535);
                 if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                     throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
@@ -408,7 +431,7 @@ public class FieldReaderServer {
                     throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
                 }
                 BigInteger b = new BigInteger(data);
-                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger startOfBounds = BigInteger.valueOf(1024);
                 BigInteger endOfBounds = BigInteger.valueOf(65535);
                 if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                     throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);

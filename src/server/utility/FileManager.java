@@ -1,6 +1,7 @@
 package server.utility;
 
 import common.exceptions.FieldReadException;
+import common.exceptions.NotExistException;
 import common.utility.ResponseBuilder;
 import common.utility.Serializer;
 import org.w3c.dom.Document;
@@ -30,6 +31,10 @@ public class FileManager {
         READ_SCRIPT
     }
 
+    public File getLoadFile() {
+        return loadFile;
+    }
+
     private File loadFile;
     private CollectionManager collectionManager;
 
@@ -44,8 +49,18 @@ public class FileManager {
     public Stack<Vehicle> readCollection(File loadFile) throws IOException, ParserConfigurationException, SAXException {
         Stack<Vehicle> C = new Stack<>();
         HashSet<String> setOfId = new HashSet<>();
-        File file = loadFile;
-        this.loadFile = loadFile;
+        String nameOfFile;
+        if (loadFile == null){
+             nameOfFile=FieldReaderServer.askFile();
+        }
+        else {
+            nameOfFile=loadFile.getAbsolutePath();
+        }
+        while (ValidatorServer.validateNameOfFile(nameOfFile,ModeOfFileManager.READ_COLLECTION)==false){
+            nameOfFile=FieldReaderServer.askFile();
+        }
+        File file = new File(nameOfFile);
+        this.loadFile = file;
 
         List<String> CharsOfVehicle = List.of("id", "name", "coordinates", "creationDate",
                 "enginePower", "numberOfWheels", "type", "fuelType");
@@ -57,7 +72,6 @@ public class FileManager {
 
         int k = 0;
 
-        ResponseBuilder.clear(); // очищаем перед чтением
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -75,11 +89,11 @@ public class FileManager {
             int collectionCount = doc.getElementsByTagName("collection").getLength();
 
             if (collectionCount == 0) {
-                ResponseBuilder.appendLn("В файле нет коллекции!");
+                System.out.println("В файле нет коллекции!");
                 throw new NoSuchElementException("В файле нет коллекции!");
             }
             if (collectionCount > 1) {
-                ResponseBuilder.appendLn("В файле более одной коллекции!");
+                System.out.println("В файле более одной коллекции!");
                 throw new NoSuchElementException("В файле более одной коллекции!");
             }
 
@@ -116,10 +130,10 @@ public class FileManager {
                 }
             }
         } catch (FileNotFoundException e) {
-            ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
+            System.out.println(e.getMessage() + " : Не удалось найти файл!");
             return readCollection(null);
         } catch (NoSuchElementException | SAXException | ParserConfigurationException | IOException ex) {
-            ResponseBuilder.appendLn(ex.getMessage());
+            System.out.println("XML-файл не валиден!: " + ex.getMessage());
             return readCollection(null);
         }
 
@@ -144,16 +158,15 @@ public class FileManager {
 
                 C.add(new Vehicle(id, name, coordinates, creationDate, enginePower, numberOfWheels, type, fuelType));
             } catch (FieldReadException e) {
-                ResponseBuilder.appendLn("Не удалось считать объект Vehicle! -> " + e.generateFullMessage());
+                System.out.println("Не удалось считать объект Vehicle! -> " + e.generateFullMessage());
             } catch (Exception e) {
-                ResponseBuilder.appendLn("Не удалось считать объект Vehicle! -> " + e.getMessage());
+                System.out.println("Не удалось считать объект Vehicle! -> " + e.getMessage());
             }
         }
         return C;
     }
 
     public boolean writeCollection() {
-        ResponseBuilder.clear();
         Stack<Vehicle> C = collectionManager.getCollection();
         File file = this.loadFile;
 
@@ -187,66 +200,21 @@ public class FileManager {
                 throw new IllegalArgumentException("Записываемые данные пусты!");
             }
             fos.write(xml.toString().getBytes("UTF-8"));
-            ResponseBuilder.append("Коллекция успешно сохранена в файл");
+            ResponseBuilder.appendSuccess("Коллекция успешно сохранена в файл");
+            System.out.println("Коллекция успешно сохранена в файл");
             return true;
         } catch (FileNotFoundException e) {
             ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
+            System.out.println(e.getMessage() + " : Не удалось найти файл!");
             return false;
         } catch (IllegalArgumentException e) {
             ResponseBuilder.appendLn(e.getMessage());
+            System.out.println(e.getMessage());
             return false;
         } catch (IOException e) {
             ResponseBuilder.appendLn(e.getMessage() + " : Непредвиденная ошибка!");
+            System.out.println(e.getMessage() + " : Непредвиденная ошибка!");
             return false;
         }
-    }
-
-    public ArrayList<String> readScript(File fileScript) {
-        ResponseBuilder.clear();
-        ArrayList<String> commands = new ArrayList<>();
-
-        try (BufferedReader in = new BufferedReader(new FileReader(fileScript))) {
-            String st;
-            while ((st = in.readLine()) != null) {
-                commands.add(st);
-            }
-            return commands;
-        } catch (FileNotFoundException e) {
-            ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
-            return null;
-        } catch (IOException e) {
-            ResponseBuilder.appendLn(e.getMessage() + " : Непредвиденная ошибка!");
-            return null;
-        }
-    }
-
-
-    public byte[] getCollectionAsBytes() {
-        try {
-            writeCollection();
-
-            if (loadFile != null && loadFile.exists()) {
-                return Files.readAllBytes(loadFile.toPath());
-            }
-        } catch (Exception e) {
-            System.err.println("Ошибка чтения файла для отправки: " + e.getMessage());
-        }
-        return new byte[0];
-    }
-
-    public void loadFromBytes(byte[] data) {
-        ResponseBuilder.clear();
-        try {
-            Stack<Vehicle> loadedCollection = (Stack<Vehicle>) Serializer.deserialize(data);
-            collectionManager.setCollection(loadedCollection);
-            collectionManager.initializeArrayId();
-            ResponseBuilder.appendLn("Коллекция успешно загружена из байтов (" + loadedCollection.size() + " элементов)");
-        } catch (Exception e) {
-            ResponseBuilder.appendLn("Ошибка загрузки коллекции из байтов: " + e.getMessage());
-        }
-    }
-
-    public File getLoadFile() {
-        return loadFile;
     }
 }

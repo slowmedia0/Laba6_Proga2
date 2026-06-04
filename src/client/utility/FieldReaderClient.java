@@ -46,7 +46,7 @@ public class FieldReaderClient {
         } catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
             userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit", ""))));
             System.exit(0);
             return null;
         } catch (WrongAmountOfElementsException e) {
@@ -920,7 +920,7 @@ public class FieldReaderClient {
                     throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
                 }
                 BigInteger b = new BigInteger(data);
-                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger startOfBounds = BigInteger.valueOf(1024);
                 BigInteger endOfBounds = BigInteger.valueOf(65535);
                 if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                     throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
@@ -967,7 +967,7 @@ public class FieldReaderClient {
                     throw new NumberFormatException("Поле 'port' не может быть дробным числом!");
                 }
                 BigInteger b = new BigInteger(data);
-                BigInteger startOfBounds = BigInteger.valueOf(1);
+                BigInteger startOfBounds = BigInteger.valueOf(1024);
                 BigInteger endOfBounds = BigInteger.valueOf(65535);
                 if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                     throw new ValueOutOfBoundsException("Поле 'port' должно находиться в диапазоне: " + startOfBounds + "<=port<=" + endOfBounds);
