@@ -46,7 +46,6 @@ public class FieldReaderClient {
         } catch (NoSuchElementException e) {
             System.out.println(e.getMessage());
             userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit", ""))));
             System.exit(0);
             return null;
         } catch (WrongAmountOfElementsException e) {
@@ -96,7 +95,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
                 System.exit(0);
                 return null;
             }
@@ -232,7 +231,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
                 System.exit(0);
                 return null;
             } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
@@ -325,7 +324,7 @@ public class FieldReaderClient {
                     catch (NumberFormatException e){
                         throw new NumberFormatException("");
                     }
-                    BigDecimal startOfBounds = BigDecimal.valueOf(Double.MIN_VALUE);
+                    BigDecimal startOfBounds = BigDecimal.valueOf(-Double.MAX_VALUE);
                     BigDecimal endOfBounds = BigDecimal.valueOf(414);
                     if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                         throw new ValueOutOfBoundsException("Поле 'y' должно находиться в диапазоне: " + startOfBounds + "<=y<=" + endOfBounds);
@@ -351,7 +350,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
                 System.exit(0);
                 return null;
             } catch (WrongAmountOfElementsException | NumberFormatException | ValidateDataException e) {
@@ -393,7 +392,7 @@ public class FieldReaderClient {
                     catch (NumberFormatException e){
                         throw new NumberFormatException("");
                     }
-                    BigDecimal startOfBounds = BigDecimal.valueOf(Double.MIN_VALUE);
+                    BigDecimal startOfBounds = BigDecimal.valueOf(-Double.MAX_VALUE);
                     BigDecimal endOfBounds = BigDecimal.valueOf(414);
                     if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                         throw new ValueOutOfBoundsException("Поле 'y' должно находиться в диапазоне: " + startOfBounds + "<=y<=" + endOfBounds);
@@ -517,7 +516,7 @@ public class FieldReaderClient {
             }catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
 
                 System.exit(0);
                 return 0;
@@ -649,7 +648,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
 
                 System.exit(0);
                 return null;
@@ -752,7 +751,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
 
                 System.exit(0);
                 return null;
@@ -842,7 +841,7 @@ public class FieldReaderClient {
             } catch (NoSuchElementException e) {
                 System.out.println(e.getMessage());
                 userHandler.setExitCodeCommandStatus(ExitCodeCommand.CTRL_D);
-            userHandler.handleExitResponse(userHandler.getUdpClient().sendRequest(userHandler.createCommandRequest(userHandler.createCommand("exit",""))));
+            
 
                 System.exit(0);
                 return null;
@@ -994,9 +993,6 @@ public class FieldReaderClient {
 
             String data = userScanner.nextLine();
 
-            if (data.split("\\s+").length > 1) {
-                throw new WrongAmountOfElementsException("Для поля 'host' указано более одного аргумента!");
-            }
 
             if (data.isEmpty()) {
                 throw new IllegalArgumentException("Поле 'host' не может быть пустым!");
@@ -1012,6 +1008,10 @@ public class FieldReaderClient {
 
             if (host.length() > 253) {
                 throw new ValueOutOfBoundsException("Адрес сервера слишком длинный (максимум 253 символа)!");
+            }
+
+            if (host.matches("^\\d+$")) {
+                throw new IllegalArgumentException("Host не может состоять только из цифр (это выглядит как порт)!");
             }
 
              if (!host.matches("^[a-zA-Z0-9.\\-:\\[\\]]+$")) {
@@ -1025,20 +1025,16 @@ public class FieldReaderClient {
             System.exit(0);
             return null;
 
-        } catch (WrongAmountOfElementsException | IllegalArgumentException | ValueOutOfBoundsException e) {
+        } catch (IllegalArgumentException | ValueOutOfBoundsException e) {
             System.out.println("Не удалось считать поле 'host'!" + " " + e.getMessage());
             System.out.println("Повторите попытку ввода");
-            return askHost(null);   // рекурсия
+            return askHost(null);   
         }
     }
 
     public static String readHost(String argument)  {
         try {
             String data = argument;
-
-            if (data.split("\\s+").length > 1) {
-                throw new WrongAmountOfElementsException("Для поля 'host' указано более одного аргумента!");
-            }
 
             if (data.isEmpty()) {
                 throw new IllegalArgumentException("Поле 'host' не может быть пустым!");
@@ -1056,15 +1052,19 @@ public class FieldReaderClient {
                 throw new ValueOutOfBoundsException("Адрес сервера слишком длинный (максимум 253 символа)!");
             }
 
+            if (host.matches("^\\d+$")) {
+                throw new IllegalArgumentException("Host не может состоять только из цифр (это выглядит как порт)!");
+            }
+
             if (!host.matches("^[a-zA-Z0-9.\\-:\\[\\]]+$")) {
                 throw new IllegalArgumentException("Адрес сервера содержит недопустимые символы!");
             }
 
             return host;
 
-        } catch (WrongAmountOfElementsException | IllegalArgumentException | ValueOutOfBoundsException e) {
+        } catch (IllegalArgumentException | ValueOutOfBoundsException e) {
             System.out.println("Не удалось считать поле 'host'!" + " " + e.getMessage());
-            return askHost(null);   // рекурсия
+            return askHost(null);   
         }
     }
 }

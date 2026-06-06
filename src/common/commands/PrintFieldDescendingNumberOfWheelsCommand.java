@@ -11,7 +11,7 @@ public class PrintFieldDescendingNumberOfWheelsCommand extends AbstractCommand{
     private CollectionManager collectionManager;
 
 
-    //Для метода createCommand из UserHandler
+    
     public PrintFieldDescendingNumberOfWheelsCommand(String argument) {
         super("print_field_descending_number_of_wheels","вывести значения поля numberOfWheels всех элементов в порядке убывания");
         this.argument=argument;

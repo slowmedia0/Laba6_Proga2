@@ -70,7 +70,7 @@ public class CollectionManager {
         ResponseBuilder.append(elements);
     }
 
-    // ==================== Stream API в остальных командах ====================
+    
 
 
     public void sumEnginePower() {

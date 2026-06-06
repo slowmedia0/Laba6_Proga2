@@ -11,7 +11,7 @@ public class AddCommand extends AbstractCommand {
     private String argument;
     private Vehicle vehicle;
 
-    //Для метода createCommand из UserHandler
+    
     public AddCommand(String argument, boolean flag) {
          super("add", "добавить новый элемент в коллекцию");
          this.argument = argument;

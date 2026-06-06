@@ -15,17 +15,15 @@ public class ResponseSender {
 
     public static void sendResponse(DatagramChannel channel, SocketAddress clientAddress, Response response) {
         try {
-            Thread.sleep(15); // небольшая задержка для стабильности
+            Thread.sleep(15);
 
             byte[] data = Serializer.serialize(response);
 
-            // === GZIP СЖАТИЕ ТОЛЬКО ДЛЯ БОЛЬШИХ ОТВЕТОВ ===
             if (data.length > COMPRESS_THRESHOLD) {
                 data = GZIPUtils.compress(data);
-                System.out.println("→ Ответ сжат GZIP (" + data.length + " байт | было " + Serializer.serialize(response).length + ")");
+                System.out.println("-> Ответ сжат GZIP (" + data.length + " байт | было " + Serializer.serialize(response).length + ")");
             }
 
-            // Простая отправка (без чанков)
             if (data.length > MAX_UDP_SIZE) {
                 System.out.println("Предупреждение: Ответ слишком большой (" + data.length + " байт), может быть потерян");
             }

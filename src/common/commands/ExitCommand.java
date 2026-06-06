@@ -15,7 +15,7 @@ public class ExitCommand extends AbstractCommand{
     private  byte[] FileData;
 
 
-    //Для метода createCommand из UserHandler
+    
     public ExitCommand(String argument) {
         super("exit","завершить программу (без сохранения в файл)");
         this.argument=argument;

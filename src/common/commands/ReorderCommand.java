@@ -10,7 +10,7 @@ public class ReorderCommand extends AbstractCommand{
     private String argument;
 
 
-    //Для метода createCommand из UserHandler
+    
     public ReorderCommand(String argument) {
         super("reorder","отсортировать коллекцию в порядке, обратном нынешнему");
         this.argument = argument;

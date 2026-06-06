@@ -15,8 +15,7 @@ public class RequestHandler {
 
     private static final int BUFFER_SIZE = 262144;
 
-    public static void handleRequest(DatagramChannel channel, Selector selector,
-                                     Console console, FileManager fileManager) {
+    public static void handleRequest(DatagramChannel channel, Selector selector, Console console, FileManager fileManager) {
         SocketAddress clientAddress = null;
         try {
             ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
@@ -34,7 +33,7 @@ public class RequestHandler {
 
             Response response = processCommand(request, console);
 
-            // Просто передаём ответ дальше (сжатие будет в ResponseSender)
+            
             ResponseSender.sendResponse(channel, clientAddress, response);
 
         } catch (Exception e) {

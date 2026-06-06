@@ -9,7 +9,7 @@ public class SortCommand extends AbstractCommand{
     private CollectionManager collectionManager;
     private String argument;
 
-    //Для метода createCommand из UserHandler
+    
     public SortCommand(String argument) {
         super("sort","отсортировать коллекцию в естественном порядке");
         this.argument=argument;

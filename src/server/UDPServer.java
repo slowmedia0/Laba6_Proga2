@@ -17,7 +17,7 @@ import java.util.Iterator;
 public class UDPServer {
 
     private static int PORT;
-    private static final int BUFFER_SIZE = 262144; // увеличен
+    private static final int BUFFER_SIZE = 262144; 
 
     private final DatagramChannel channel;
     private final Selector selector;
@@ -32,13 +32,24 @@ public class UDPServer {
 
         this.channel = DatagramChannel.open();
         this.channel.configureBlocking(false);
-        this.channel.bind(new InetSocketAddress(PORT));
+    try {
+            this.channel.bind(new InetSocketAddress("0.0.0.0",PORT));
+            System.out.println("Сервер успешно запущен на порту " + PORT);
+            System.out.println("Ожидаем подключений");
+        } catch (IOException e) {
+            if (e.getMessage() != null &&
+                    (e.getMessage().contains("Address already in use") ||
+                            e.getMessage().contains("Cannot assign requested address"))) {
+                System.out.println("Порт " + PORT + " уже занят!");
+                System.out.println("Завершите предыдущий экземпляр сервера или используйте другой порт.");
+                System.exit(0);
+            } else {
+                throw e;
+            }
+        }
 
         this.selector = Selector.open();
         this.channel.register(selector, SelectionKey.OP_READ);
-
-        System.out.println("Сервер успешно запущен на порту " + PORT);
-        System.out.println("Ожидаем подключений");
     }
 
     public void start() {

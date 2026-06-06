@@ -40,6 +40,7 @@ public class UserHandler {
         this.arguments=new ArrayList<>();
     }
     private Response sendAndCheck(CommandRequest request) {
+
         Response response = udpClient.sendRequest(request);
 
         if (response == null) {
@@ -189,7 +190,7 @@ public class UserHandler {
         }
 
         CommandRequest request = createCommandRequest(commandObject);
-        Response response = sendAndCheck(request);   // ← минимальное изменение
+        Response response = sendAndCheck(request);   
 
         if (response != null && response.getMessage() != null && !response.getMessage().isEmpty()) {
             System.out.println("   " + response.getMessage());
@@ -240,7 +241,7 @@ public class UserHandler {
                 }
 
                 CommandRequest request = createCommandRequest(commandObject);
-                Response response = sendAndCheck(request);   // ← минимальное изменение
+                Response response = sendAndCheck(request);   
 
                 if ("exit".equalsIgnoreCase(commandObject.getNameOfCommand())) {
                     handleExitResponse(response);
@@ -255,7 +256,6 @@ public class UserHandler {
         catch(NoSuchElementException e){
             System.out.println(e.getMessage());
             ExitCodeCommandStatus= ExitCodeCommand.CTRL_D;
-            handleExitResponse(udpClient.sendRequest(createCommandRequest(createCommand("exit",""))));
             System.exit(0);
         }
     }
@@ -284,7 +284,7 @@ public class UserHandler {
         }
 
         CommandRequest request = createCommandRequest(commandObject);
-        Response response = sendAndCheck(request);   // ← минимальное изменение
+        Response response = sendAndCheck(request);   
 
         if ("exit".equalsIgnoreCase(mnemonics)) {
             handleExitResponse(response);
@@ -349,8 +349,9 @@ public class UserHandler {
     public void handleExitResponse(Response response) {
         if (response == null) {
             System.out.println("Сервер не вернул ответ при выходе.");
+            System.out.println("Клиент завершает работу.");
             udpClient.close();
-            System.exit(0);
+            ExitCodeCommandStatus = ExitCodeCommand.EXIT;
             return;
         }
 
@@ -358,6 +359,5 @@ public class UserHandler {
         System.out.println("Клиент завершает работу.");
         udpClient.close();
         ExitCodeCommandStatus = ExitCodeCommand.EXIT;
-        System.exit(0);
     }
 }

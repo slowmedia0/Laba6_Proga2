@@ -15,7 +15,7 @@ public class UpdateIdCommand extends AbstractCommand{
     private Vehicle vehicle;
     private CollectionManager collectionManager;
 
-    //Для метода createCommand из UserHandler
+    
     public UpdateIdCommand(String argument,boolean flag){
         super("update","обновить значение элемента коллекции, id которого равен заданному");
         this.argument=argument;

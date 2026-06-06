@@ -18,7 +18,7 @@ public class ExecuteScriptCommand extends AbstractCommand{
     private  String FileName;
     private  byte[] FileData;
 
-    //Для метода createCommand из UserHandler
+    
     public ExecuteScriptCommand(String argument) {
         super("execute_script","считать и исполнить скрипт из указанного файла. В скрипте содержатся команды в таком же виде, в котором их вводит пользователь в интерактивном режиме.");
         this.argument=argument;

@@ -9,7 +9,7 @@ public class ShowCommand extends AbstractCommand {
     private CollectionManager collectionManager;
     private String argument;
 
-    //Для метода createCommand из UserHandler
+    
     public ShowCommand(String argument) {
         super("show", "вывести в стандартный поток вывода все элементы коллекции в строковом представлении");
         this.argument = argument;

@@ -137,7 +137,7 @@ public class FileManager {
             return readCollection(null);
         }
 
-        // Создание объектов Vehicle
+        
         for (int j = 0; j < k; j++) {
             ArrayList<String> ar = new ArrayList<>(CharsOfVehicle.size());
             for (int i = 0; i < CharsOfVehicle.size(); i++) {
@@ -200,8 +200,8 @@ public class FileManager {
                 throw new IllegalArgumentException("Записываемые данные пусты!");
             }
             fos.write(xml.toString().getBytes("UTF-8"));
-            ResponseBuilder.appendSuccess("Коллекция успешно сохранена в файл");
-            System.out.println("Коллекция успешно сохранена в файл");
+            ResponseBuilder.appendSuccess("Коллекция успешно сохранена в файл " + loadFile.getAbsolutePath());
+            System.out.println("Коллекция успешно сохранена в файл " + loadFile.getAbsolutePath());
             return true;
         } catch (FileNotFoundException e) {
             ResponseBuilder.appendLn(e.getMessage() + " : Не удалось найти файл!");
@@ -217,4 +217,5 @@ public class FileManager {
             return false;
         }
     }
+
 }

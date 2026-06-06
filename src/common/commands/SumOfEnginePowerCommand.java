@@ -10,7 +10,7 @@ public class SumOfEnginePowerCommand extends AbstractCommand{
     private CollectionManager collectionManager;
     private String argument;
 
-    //Для метода createCommand из UserHandler
+    
     public SumOfEnginePowerCommand(String argument) {
         super("sum_of_engine_power","вывести сумму значений поля enginePower для всех элементов коллекции");
         this.argument=argument;

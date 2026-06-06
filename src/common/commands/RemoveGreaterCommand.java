@@ -12,7 +12,7 @@ public class RemoveGreaterCommand extends AbstractCommand{
     private String argument;
     private Vehicle vehicle;
 
-    //Для метода createCommand из UserHandler
+    
     public RemoveGreaterCommand(String argument,boolean flag) {
         super("remove_greater","удалить из коллекции все элементы, превышающие заданный");
         this.argument=argument;

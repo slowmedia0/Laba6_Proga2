@@ -18,7 +18,6 @@ public class ResponseBuilder {
         append(text);
         output.append("\n");
     }
-
     public static void appendError(String text) {
         if (text != null) {
             append("Ошибка: " + text);

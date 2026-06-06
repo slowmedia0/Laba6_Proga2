@@ -14,17 +14,16 @@ import java.io.File;
 public class App {
     static Console console;
     public static void main(String[] args) {
+        System.out.println("Использование: java -jar server.jar <port> <filename>");
+        System.out.println("Пример корректного использования: java -jar server.jar 2222 input_data.xml");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (console!=null & !console.isFlagReadCollection()) {
+            if (console!=null && !console.isFlagReadCollection()) {
                 console.launchCommand("exit", "");
             }
             System.out.println("Завершение работы сервера");
         }));
-/*
         if (args.length != 2) {
             System.out.println("Необходимо указать два аргумента!");
-            System.out.println("Использование: java -jar client.jar <port> <filename>");
-            System.out.println("Пример корректного использования: java -jar client.jar 2222 input_data.xml");
             System.exit(1);
         }
 
@@ -33,10 +32,6 @@ public class App {
         while (ValidatorClient.validateNameOfFile(nameOfFile, FileManagerClient.ModeOfFileManager.READ_COLLECTION)==false){
             nameOfFile= FieldReaderServer.askFile();
         }
-
- */
-        int port = 2222;
-        String nameOfFile="src\\input_data.xml";
 
         try {
             CollectionManager collectionManager = new CollectionManager();

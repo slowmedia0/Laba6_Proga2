@@ -11,7 +11,7 @@ public class ClearCommand extends AbstractCommand {
     private CollectionManager collectionManager;
     private String argument;
 
-    //Для метода createCommand из UserHandler
+    
     public ClearCommand(String argument) {
         super("clear","очистить коллекцию");
         this.argument=argument;

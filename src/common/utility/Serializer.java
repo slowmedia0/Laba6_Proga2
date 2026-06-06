@@ -2,9 +2,7 @@ package common.utility;
 
 import java.io.*;
 
-/**
- * Утилита для сериализации и десериализации объектов
- */
+
 public class Serializer {
 
     public static byte[] serialize(Object obj) throws IOException {
