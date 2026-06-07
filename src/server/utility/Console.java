@@ -1,15 +1,14 @@
 package server.utility;
 
 import common.ExitCodeCommand;
-import common.models.*;
-import common.exceptions.*;
+import common.exceptions.CommandNotExist;
+import common.models.Vehicle;
 import common.utility.ResponseBuilder;
-import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 
 /**
@@ -37,37 +36,16 @@ public class Console {
         this.collectionManager = collectionManager;
     }
 
-    public ExitCodeCommand getExitCodeStatus() {
-        return exitCodeStatus;
-    }
+    // ==================== ГЕТТЕРЫ И СЕТТЕРЫ (без изменений) ====================
+    public ExitCodeCommand getExitCodeStatus() { return exitCodeStatus; }
+    public void setExitCodeStatus(ExitCodeCommand exitCodeStatus) { this.exitCodeStatus = exitCodeStatus; }
+    public String getLoadFileName() { return loadFileName; }
+    public byte[] getLoadFileData() { return loadFileData; }
+    public ArrayList<String> getFields() { return fields; }
+    public boolean isFlagScript() { return flagScript; }
+    public boolean isFlagReadCollection() { return flagReadCollection; }
 
-    public void setExitCodeStatus(ExitCodeCommand exitCodeStatus) {
-        this.exitCodeStatus = exitCodeStatus;
-    }
-
-    public String getLoadFileName() {
-        return loadFileName;
-    }
-
-    public byte[] getLoadFileData() {
-        return loadFileData;
-    }
-
-    public ArrayList<String> getFields() {
-        return fields;
-    }
-
-    public boolean isFlagScript() {
-        return flagScript;
-    }
-
-    public boolean isFlagReadCollection() {
-        return flagReadCollection;
-    }
-
-    /**
-     * Загружает коллекцию из файла при запуске сервера.
-     */
+    // ==================== ЗАГРУЗКА КОЛЛЕКЦИИ (без изменений) ====================
     public void loadCollection(File loadFile) throws IOException, ParserConfigurationException, SAXException {
         this.currentLoadFile = loadFile;
         flagReadCollection = true;
@@ -77,65 +55,27 @@ public class Console {
         System.out.println("Коллекция успешно считана из загрузочного файла!");
         collectionManager.initializeArrayId();
         collectionManager.setCreationDate(java.time.LocalDate.now());
-        int size = collectionManager.getCollection().size();
         flagReadCollection = false;
     }
 
+    // ==================== НОВЫЕ МЕТОДЫ (switch убран) ====================
 
     public ExitCodeCommand launchCommand(String mnemonics, String argument) {
         try {
-            switch (mnemonics) {
-                case "help":
-                    exitCodeStatus = commandManager.help(argument);
-                    return exitCodeStatus;
-                case "info":
-                    exitCodeStatus = commandManager.info(argument);
-                    return exitCodeStatus;
-                case "show":
-                    exitCodeStatus = commandManager.show(argument);
-                    return exitCodeStatus;
-                case "add":
-                    exitCodeStatus = commandManager.add(argument);
-                    return exitCodeStatus;
-                case "update":
-                    exitCodeStatus = commandManager.updateById(argument);
-                    return exitCodeStatus;
-                case "remove_by_id":
-                    exitCodeStatus = commandManager.removeById(argument);
-                    return exitCodeStatus;
-                case "clear":
-                    exitCodeStatus = commandManager.clear(argument);
-                    return exitCodeStatus;
-                case "exit":
-                    exitCodeStatus = commandManager.exit(argument);
-                    return exitCodeStatus;
-                case "remove_greater":
-                    exitCodeStatus = commandManager.removeGreater(argument);
-                    return exitCodeStatus;
-                case "reorder":
-                    exitCodeStatus = commandManager.reorder(argument);
-                    return exitCodeStatus;
-                case "sort":
-                    exitCodeStatus = commandManager.sort(argument);
-                    return exitCodeStatus;
-                case "sum_of_engine_power":
-                    exitCodeStatus = commandManager.sumOfEnginePower(argument);
-                    return exitCodeStatus;
-                case "print_field_ascending_number_of_wheels":
-                    exitCodeStatus = commandManager.printFieldAscendingNumberOfWheels(argument);
-                    return exitCodeStatus;
-                case "print_field_descending_number_of_wheels":
-                    exitCodeStatus = commandManager.printFieldDescendingNumberOfWheels(argument);
-                    return exitCodeStatus;
-                default:
-                    if ((mnemonics + argument).isEmpty() || (mnemonics + argument).trim().isEmpty()) {
-                        exitCodeStatus = ExitCodeCommand.OK;
-                        return exitCodeStatus;
-                    }
-                    throw new CommandNotExist("Команда " + mnemonics + " не существует!");
+            if (isEmptyCommand(mnemonics, argument)) {
+                exitCodeStatus = ExitCodeCommand.OK;
+                return exitCodeStatus;
             }
+
+            exitCodeStatus = commandManager.execute(mnemonics, argument);
+            return exitCodeStatus;
+
         } catch (CommandNotExist e) {
             ResponseBuilder.appendLn(e.getMessage());
+            exitCodeStatus = ExitCodeCommand.ERROR;
+            return exitCodeStatus;
+        } catch (Exception e) {
+            ResponseBuilder.appendLn("Ошибка выполнения команды: " + e.getMessage());
             exitCodeStatus = ExitCodeCommand.ERROR;
             return exitCodeStatus;
         }
@@ -143,60 +83,27 @@ public class Console {
 
     public ExitCodeCommand launchCommand(String mnemonics, String argument, Vehicle vehicle, String FileName, byte[] FileData) {
         try {
-            switch (mnemonics) {
-                case "help":
-                    exitCodeStatus = commandManager.help(argument, null, null, null);
-                    return exitCodeStatus;
-                case "info":
-                    exitCodeStatus = commandManager.info(argument, null, null, null);
-                    return exitCodeStatus;
-                case "show":
-                    exitCodeStatus = commandManager.show(argument, null, null, null);
-                    return exitCodeStatus;
-                case "add":
-                    exitCodeStatus = commandManager.add(argument, vehicle, null, null);
-                    return exitCodeStatus;
-                case "update":
-                    exitCodeStatus = commandManager.updateById(argument, vehicle, null, null);
-                    return exitCodeStatus;
-                case "remove_by_id":
-                    exitCodeStatus = commandManager.removeById(argument, null, null, null);
-                    return exitCodeStatus;
-                case "clear":
-                    exitCodeStatus = commandManager.clear(argument, null, null, null);
-                    return exitCodeStatus;
-                case "exit":
-                    exitCodeStatus = commandManager.exit(argument, null, null, null);
-                    return exitCodeStatus;
-                case "remove_greater":
-                    exitCodeStatus = commandManager.removeGreater(argument, vehicle, null, null);
-                    return exitCodeStatus;
-                case "reorder":
-                    exitCodeStatus = commandManager.reorder(argument, null, null, null);
-                    return exitCodeStatus;
-                case "sort":
-                    exitCodeStatus = commandManager.sort(argument, null, null, null);
-                    return exitCodeStatus;
-                case "sum_of_engine_power":
-                    exitCodeStatus = commandManager.sumOfEnginePower(argument, null, null, null);
-                    return exitCodeStatus;
-                case "print_field_ascending_number_of_wheels":
-                    exitCodeStatus = commandManager.printFieldAscendingNumberOfWheels(argument, null, null, null);
-                    return exitCodeStatus;
-                case "print_field_descending_number_of_wheels":
-                    exitCodeStatus = commandManager.printFieldDescendingNumberOfWheels(argument, null, null, null);
-                    return exitCodeStatus;
-                default:
-                    if ((mnemonics + argument).isEmpty() || (mnemonics + argument).trim().isEmpty()) {
-                        exitCodeStatus = ExitCodeCommand.OK;
-                        return exitCodeStatus;
-                    }
-                    throw new CommandNotExist("Команда " + mnemonics + " не существует!");
+            if (isEmptyCommand(mnemonics, argument)) {
+                exitCodeStatus = ExitCodeCommand.OK;
+                return exitCodeStatus;
             }
+
+            exitCodeStatus = commandManager.execute(mnemonics, argument, vehicle, FileName, FileData);
+            return exitCodeStatus;
+
         } catch (CommandNotExist e) {
             ResponseBuilder.appendLn(e.getMessage());
             exitCodeStatus = ExitCodeCommand.ERROR;
             return exitCodeStatus;
+        } catch (Exception e) {
+            ResponseBuilder.appendLn("Ошибка выполнения команды: " + e.getMessage());
+            exitCodeStatus = ExitCodeCommand.ERROR;
+            return exitCodeStatus;
         }
+    }
+
+    private boolean isEmptyCommand(String mnemonics, String argument) {
+        return (mnemonics == null || mnemonics.trim().isEmpty()) &&
+                (argument == null || argument.trim().isEmpty());
     }
 }

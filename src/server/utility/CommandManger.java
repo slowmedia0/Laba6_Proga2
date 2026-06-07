@@ -2,9 +2,9 @@ package server.utility;
 
 import common.ExitCodeCommand;
 import common.commands.*;
+import common.exceptions.CommandNotExist;
 import common.models.Vehicle;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -215,5 +215,65 @@ public class CommandManger {
 
     public ExitCommand getExitCommand() {
         return exitCommand;
+    }
+
+
+
+    /**
+     * Универсальный метод для запуска команд (используется Console)
+     */
+    public ExitCodeCommand execute(String mnemonics, String argument) throws CommandNotExist{
+        String cmd = (mnemonics == null) ? "" : mnemonics.toLowerCase().trim();
+
+        switch (cmd) {
+            case "help":                    return help(argument);
+            case "info":                    return info(argument);
+            case "show":                    return show(argument);
+            case "add":                     return add(argument);
+            case "update":                  return updateById(argument);
+            case "remove_by_id":            return removeById(argument);
+            case "clear":                   return clear(argument);
+            case "execute_script":          return executeScript(argument);
+            case "exit":                    return exit(argument);
+            case "remove_greater":          return removeGreater(argument);
+            case "reorder":                 return reorder(argument);
+            case "sort":                    return sort(argument);
+            case "sum_of_engine_power":     return sumOfEnginePower(argument);
+            case "print_field_ascending_number_of_wheels":
+                return printFieldAscendingNumberOfWheels(argument);
+            case "print_field_descending_number_of_wheels":
+                return printFieldDescendingNumberOfWheels(argument);
+            default:
+                throw new CommandNotExist("Команда " + mnemonics + " не существует!");
+        }
+    }
+
+    /**
+     * Универсальный метод для команд с Vehicle
+     */
+    public ExitCodeCommand execute(String mnemonics, String argument, Vehicle vehicle, String FileName, byte[] FileData) throws CommandNotExist {
+        String cmd = (mnemonics == null) ? "" : mnemonics.toLowerCase().trim();
+
+        switch (cmd) {
+            case "help":                    return help(argument, vehicle, FileName, FileData);
+            case "info":                    return info(argument, vehicle, FileName, FileData);
+            case "show":                    return show(argument, vehicle, FileName, FileData);
+            case "add":                     return add(argument, vehicle, FileName, FileData);
+            case "update":                  return updateById(argument, vehicle, FileName, FileData);
+            case "remove_by_id":            return removeById(argument, vehicle, FileName, FileData);
+            case "clear":                   return clear(argument, vehicle, FileName, FileData);
+            case "execute_script":          return executeScript(argument, vehicle, FileName, FileData);
+            case "exit":                    return exit(argument, vehicle, FileName, FileData);
+            case "remove_greater":          return removeGreater(argument, vehicle, FileName, FileData);
+            case "reorder":                 return reorder(argument, vehicle, FileName, FileData);
+            case "sort":                    return sort(argument, vehicle, FileName, FileData);
+            case "sum_of_engine_power":     return sumOfEnginePower(argument, vehicle, FileName, FileData);
+            case "print_field_ascending_number_of_wheels":
+                return printFieldAscendingNumberOfWheels(argument, vehicle, FileName, FileData);
+            case "print_field_descending_number_of_wheels":
+                return printFieldDescendingNumberOfWheels(argument, vehicle, FileName, FileData);
+            default:
+                throw new CommandNotExist("Команда " + mnemonics + " не существует!");
+        }
     }
 }

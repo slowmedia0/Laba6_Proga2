@@ -3,15 +3,20 @@ package client;
 import common.ExitCodeCommand;
 import common.commands.CommandRequest;
 import common.interaction.Response;
+import common.interaction.ResponseChunk;
 import common.utility.GZIPUtils;
 import common.utility.Serializer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.PortUnreachableException;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class UDPClient {
 
@@ -107,32 +112,111 @@ public class UDPClient {
         DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
 
         try {
-            socket.receive(receivePacket);
+            socket.receive(receivePacket);   // один receive
 
             byte[] data = new byte[receivePacket.getLength()];
             System.arraycopy(buffer, 0, data, 0, data.length);
 
+            // Обычный ответ
             Response response = tryDeserialize(data);
-
-            if (response == null) {
-                try {
-                    byte[] decompressed = GZIPUtils.decompress(data);
-                    response = tryDeserialize(decompressed);
-                    if (response != null) {
-                        System.out.println("Ответ распакован GZIP");
-                    }
-                } catch (Exception ignored) {}
-            }
-
             if (response != null) {
                 System.out.println("<- Ответ получен (" + data.length + " байт)");
                 return response;
             }
+
+            // GZIP ответ
+            try {
+                byte[] decompressed = GZIPUtils.decompress(data);
+                response = tryDeserialize(decompressed);
+                if (response != null) {
+                    System.out.println("Ответ распакован GZIP");
+                    System.out.println("<- Ответ получен (" + data.length + " байт)");
+                    return response;
+                }
+            } catch (Exception ignored) {}
+
+            // Чанк
+            try {
+                Object obj = Serializer.deserialize(data);
+                if (obj instanceof ResponseChunk chunk) {
+                    return handleChunk(chunk);
+                }
+            } catch (Exception ignored) {}
+
             return null;
 
         } catch (SocketTimeoutException e) {
-            throw e;  
+            throw e;
         }
+    }
+
+    // Очень простая обработка чанков
+    private Response handleChunk(ResponseChunk firstChunk) {
+        List<ResponseChunk> chunks = new ArrayList<>();
+        chunks.add(firstChunk);
+
+        System.out.println("Получен чанк " + (firstChunk.getChunkNumber() + 1) + "/" + firstChunk.getTotalChunks());
+
+        // Если это последний чанк — сразу собираем
+        if (firstChunk.isLast()) {
+            return assembleChunks(chunks);
+        }
+
+        // Если чанков больше одного — делаем ещё 1-2 попытки получить остальные
+        byte[] buffer = new byte[BUFFER_SIZE];
+        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+
+        for (int i = 0; i < 3; i++) {   // максимум 3 попытки
+            try {
+                socket.setSoTimeout(800); // короткий таймаут
+                socket.receive(packet);
+
+                byte[] data = new byte[packet.getLength()];
+                System.arraycopy(buffer, 0, data, 0, data.length);
+
+                Object obj = Serializer.deserialize(data);
+                if (obj instanceof ResponseChunk chunk) {
+                    chunks.add(chunk);
+                    System.out.println("Получен чанк " + (chunk.getChunkNumber() + 1) + "/" + chunk.getTotalChunks());
+
+                    if (chunk.isLast()) {
+                        return assembleChunks(chunks);
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        System.out.println("Не удалось получить все чанки");
+        return null;
+    }
+
+    private Response assembleChunks(List<ResponseChunk> chunks) {
+        chunks.sort(Comparator.comparingInt(ResponseChunk::getChunkNumber));
+
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            for (ResponseChunk c : chunks) {
+                baos.write(c.getData());
+            }
+
+            byte[] fullData = baos.toByteArray();
+            System.out.println("Собран большой ответ из " + chunks.size() + " чанков (" + fullData.length + " байт)");
+
+            Response response = tryDeserialize(fullData);
+            if (response != null) return response;
+
+            // Пробуем распаковать GZIP
+            try {
+                byte[] decompressed = GZIPUtils.decompress(fullData);
+                response = tryDeserialize(decompressed);
+                if (response != null) {
+                    System.out.println("Большой ответ распакован GZIP");
+                    return response;
+                }
+            } catch (Exception ignored) {}
+        } catch (Exception e) {
+            System.out.println("Ошибка сборки: " + e.getMessage());
+        }
+        return null;
     }
 
     private Response tryDeserialize(byte[] data) {
