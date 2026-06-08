@@ -9,18 +9,10 @@ import java.nio.file.AccessDeniedException;
 import java.time.LocalDate;
 import java.util.Stack;
 
-/**
- * Класс валидации данных.
- */
+
 public class ValidatorClient {
 
-    /**
-     * Проверяет корректность поля coordinates.
-     *
-     * @param coordinates объект координат
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateCoordinatesVehicle(Coordinates coordinates) throws ValidateDataException {
         try {
             if (coordinates==null){
@@ -33,13 +25,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля x.
-     *
-     * @param x координата X
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateXCoordinates(Long x) throws ValidateDataException {
         try {
             if (x==null){
@@ -52,13 +38,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля y.
-     *
-     * @param y координата Y
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateYCoordinates(Double y) throws ValidateDataException {
         try {
             if (y==null){
@@ -71,14 +51,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность и уникальность поля id.
-     *
-     * @param id идентификатор
-     * @param C коллекция объектов
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateIdVehicle(Integer id, Stack<Vehicle> C) throws ValidateDataException {
         try {
             if (id==null){
@@ -112,13 +85,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля id.
-     *
-     * @param id идентификатор
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateIdVehicle(Integer id) throws ValidateDataException {
         try {
             if (id==null){
@@ -131,13 +98,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля name.
-     *
-     * @param name имя транспортного средства
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateNameVehicle(String name) throws ValidateDataException {
         try{
             if (name.isEmpty()){
@@ -153,13 +114,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля creationDate.
-     *
-     * @param creationDate дата создания
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateCreationDateVehicle(LocalDate creationDate) throws ValidateDataException {
         try {
             if (creationDate==null){
@@ -172,13 +127,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля numberOfWheels.
-     *
-     * @param numberOfWheels количество колёс
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateNumberOfWheelsVehicle(Long numberOfWheels) throws ValidateDataException {
         try {
             if (numberOfWheels==null){
@@ -191,13 +140,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность поля type.
-     *
-     * @param type тип транспортного средства
-     * @return true, если поле корректно
-     * @throws ValidateDataException если поле невалидно
-     */
+    
     public static boolean validateTypeVehicle(VehicleType type) throws ValidateDataException {
         try {
             if (type==null){
@@ -210,13 +153,7 @@ public class ValidatorClient {
         }
     }
 
-    /**
-     * Проверяет корректность имени файла.
-     *
-     * @param nameOfFile имя файла
-     * @param modeOfFileManager режим работы файлового менеджера
-     * @return true, если имя файла корректно
-     */
+    
     public static boolean validateNameOfFile(String nameOfFile, FileManagerClient.ModeOfFileManager modeOfFileManager){
         File file = new File(nameOfFile);
         switch (modeOfFileManager) {

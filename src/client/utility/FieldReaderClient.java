@@ -14,24 +14,18 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-/**
- * Класс для чтения и проверки полей объектов.
- */
+
 public class FieldReaderClient {
-    /** Сканер пользовательского ввода. */
+    
     private static final Scanner userScanner = new Scanner(System.in);
-    /** Ссылка на объект консоли. */
+    
     private static UserHandler userHandler;
 
     public static void setUserHandler(UserHandler userHandler) {
         FieldReaderClient.userHandler = userHandler;
     }
 
-    /**
-     * Запрашивает имя файла у пользователя.
-     *
-     * @return имя файла
-     */
+    
     public static String askFile(){
         try {
             System.out.println("Введите имя файла или его путь");
@@ -56,11 +50,7 @@ public class FieldReaderClient {
     }
     
 
-    /**
-     * Считывает составной объект Vehicle.
-     *
-     * @return новый объект Vehicle
-     */
+    
     public static Vehicle askVehicleObject() throws ValidateDataException, NotExistException, FieldReadException {
         try {
             if (!userHandler.isFlagScript()) {
@@ -72,12 +62,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле name.
-     *
-     * @param argument значение поля
-     * @return имя транспортного средства
-     */
+    
     public static String readFieldName(String argument) throws ValidateDataException, FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             try {
@@ -138,13 +123,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле coordinates.
-     *
-     * @param argX значение координаты X
-     * @param argY значение координаты Y
-     * @return объект координат
-     */
+    
     public static Coordinates askCoordinates(String argX, String argY) throws ValidateDataException, FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             try {
@@ -183,12 +162,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле x.
-     *
-     * @param argument строковое значение
-     * @return значение координаты X
-     */
+    
     public static Long readFieldX(String argument) throws FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             try {
@@ -293,12 +267,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле y.
-     *
-     * @param argument строковое значение
-     * @return значение координаты Y
-     */
+    
     public static Double readFieldY(String argument) throws ValidateDataException, FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             try {
@@ -416,12 +385,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле creationDate.
-     *
-     * @param argument строковое значение
-     * @return дата создания
-     */
+    
     public static LocalDate readFieldCreationDate(String argument) throws ValidateDataException, FieldReadException {
         try {
             String data = argument;
@@ -451,12 +415,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле enginePower.
-     *
-     * @param argument строковое значение
-     * @return мощность двигателя
-     */
+    
     public static float readFieldEnginePower(String argument) throws ValidateDataException, FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             try {
@@ -489,12 +448,7 @@ public class FieldReaderClient {
                     if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0){
                         throw new ValueOutOfBoundsException("Поле 'enginePower' должно находиться в диапазоне: " + startOfBounds + "<=enginePower<=" + endOfBounds);
                     }
-                    /*
-                    enginePower = Float.parseFloat(data);
-                    if (b.compareTo(BigDecimal.valueOf(enginePower))!=0){
-                        System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'enginePower': " + enginePower);
-                    }
-                    */
+                    
 
                     enginePower = Float.parseFloat(data);
                     BigDecimal visualEnginePower = new BigDecimal(String.valueOf(enginePower));
@@ -572,12 +526,7 @@ public class FieldReaderClient {
                     if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0){
                         throw new ValueOutOfBoundsException("Поле 'enginePower' должно находиться в диапазоне: " + startOfBounds + "<=enginePower<=" + endOfBounds);
                     }
-                    /*
-                    enginePower = Float.parseFloat(data);
-                    if (b.compareTo(BigDecimal.valueOf(enginePower))!=0){
-                        System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'enginePower': " + enginePower);
-                    }
-                     */
+                    
                     enginePower = Float.parseFloat(data);
                     BigDecimal visualEnginePower = new BigDecimal(String.valueOf(enginePower));
                     visualEnginePower = visualEnginePower.stripTrailingZeros();
@@ -598,12 +547,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле numberOfWheels.
-     *
-     * @param argument строковое значение
-     * @return количество колёс
-     */
+    
     public static Long readFieldNumberOfWheels(String argument) throws ValidateDataException, FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             try {
@@ -715,12 +659,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле type.
-     *
-     * @param argument строковое значение
-     * @return тип транспортного средства
-     */
+    
     public static VehicleType readFieldType(String argument) throws NotExistException, ValidateDataException, FieldReadException, EnumConstantNotPresentException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             System.out.println("Введите одно из значений поля 'type': ");
@@ -803,12 +742,7 @@ public class FieldReaderClient {
         }
     }
 
-    /**
-     * Считывает поле fuelType.
-     *
-     * @param argument строковое значение
-     * @return тип топлива
-     */
+    
     public static FuelType readFieldFuelType(String argument) throws NotExistException, FieldReadException {
         if (!userHandler.isFlagScript() && !userHandler.isFlagReadCollection()) {
             System.out.println("Введите одно из значений поля 'fuelType': ");

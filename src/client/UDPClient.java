@@ -112,19 +112,19 @@ public class UDPClient {
         DatagramPacket receivePacket = new DatagramPacket(buffer, buffer.length);
 
         try {
-            socket.receive(receivePacket);   // один receive
+            socket.receive(receivePacket);   
 
             byte[] data = new byte[receivePacket.getLength()];
             System.arraycopy(buffer, 0, data, 0, data.length);
 
-            // Обычный ответ
+            
             Response response = tryDeserialize(data);
             if (response != null) {
                 System.out.println("<- Ответ получен (" + data.length + " байт)");
                 return response;
             }
 
-            // GZIP ответ
+            
             try {
                 byte[] decompressed = GZIPUtils.decompress(data);
                 response = tryDeserialize(decompressed);
@@ -135,7 +135,7 @@ public class UDPClient {
                 }
             } catch (Exception ignored) {}
 
-            // Чанк
+            
             try {
                 Object obj = Serializer.deserialize(data);
                 if (obj instanceof ResponseChunk chunk) {
@@ -150,25 +150,25 @@ public class UDPClient {
         }
     }
 
-    // Очень простая обработка чанков
+    
     private Response handleChunk(ResponseChunk firstChunk) {
         List<ResponseChunk> chunks = new ArrayList<>();
         chunks.add(firstChunk);
 
         System.out.println("Получен чанк " + (firstChunk.getChunkNumber() + 1) + "/" + firstChunk.getTotalChunks());
 
-        // Если это последний чанк — сразу собираем
+        
         if (firstChunk.isLast()) {
             return assembleChunks(chunks);
         }
 
-        // Если чанков больше одного — делаем ещё 1-2 попытки получить остальные
+        
         byte[] buffer = new byte[BUFFER_SIZE];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-        for (int i = 0; i < 3; i++) {   // максимум 3 попытки
+        for (int i = 0; i < 3; i++) {   
             try {
-                socket.setSoTimeout(800); // короткий таймаут
+                socket.setSoTimeout(800); 
                 socket.receive(packet);
 
                 byte[] data = new byte[packet.getLength()];
@@ -204,7 +204,7 @@ public class UDPClient {
             Response response = tryDeserialize(fullData);
             if (response != null) return response;
 
-            // Пробуем распаковать GZIP
+            
             try {
                 byte[] decompressed = GZIPUtils.decompress(fullData);
                 response = tryDeserialize(decompressed);

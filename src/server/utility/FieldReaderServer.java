@@ -14,10 +14,7 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-/**
- * Класс для чтения и проверки полей объектов на сервере.
- * Весь вывод теперь идёт через ResponseBuilder.
- */
+
 public class FieldReaderServer {
 
     private static final Scanner userScanner = new Scanner(System.in);
@@ -338,12 +335,7 @@ public class FieldReaderServer {
                 if (b.compareTo(startOfBounds) < 0 || b.compareTo(endOfBounds) > 0) {
                     throw new ValueOutOfBoundsException("Поле 'enginePower' должно находиться в диапазоне: " + startOfBounds + "<=enginePower<=" + endOfBounds);
                 }
-                    /*
-                    enginePower = Float.parseFloat(data);
-                    if (b.compareTo(BigDecimal.valueOf(enginePower))!=0){
-                        System.out.println("Предупреждаем, что число потеряло точность! Вот какое число в действительности считалось для поля 'enginePower': " + enginePower);
-                    }
-                     */
+                    
                 enginePower = Float.parseFloat(data);
                 BigDecimal visualEnginePower = new BigDecimal(String.valueOf(enginePower));
                 visualEnginePower = visualEnginePower.stripTrailingZeros();

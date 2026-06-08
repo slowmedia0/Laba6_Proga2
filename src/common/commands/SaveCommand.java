@@ -4,18 +4,12 @@ package common.commands;
 import common.ExitCodeCommand;
 import server.utility.FileManager;
 
-/**
- * Команда сохранения коллекции в файл.
- */
+
 public class SaveCommand extends AbstractCommand {
-    /** Файловый менеджер. */
+    
     private final FileManager fileManager;
 
-    /**
-     * Создаёт команду {@code save}.
-     *
-     * @param fileManager файловый менеджер
-     */
+    
     public SaveCommand(FileManager fileManager) {
         super("save","сохранить коллекцию в файл");
         this.fileManager = fileManager;

@@ -9,7 +9,7 @@ public class ResponseChunk implements Serializable {
     private final UUID requestId;
     private final int chunkNumber;
     private final int totalChunks;
-    private final byte[] data;           // gzipped часть Response
+    private final byte[] data;           
     private final boolean isLast;
 
     public ResponseChunk(UUID requestId, int chunkNumber, int totalChunks, byte[] data, boolean isLast) {
@@ -20,7 +20,7 @@ public class ResponseChunk implements Serializable {
         this.isLast = isLast;
     }
 
-    // getters
+    
     public UUID getRequestId() { return requestId; }
     public int getChunkNumber() { return chunkNumber; }
     public int getTotalChunks() { return totalChunks; }

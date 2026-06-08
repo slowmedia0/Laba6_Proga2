@@ -22,12 +22,12 @@ public class App {
             }
             System.out.println("Завершение работы сервера");
         }));
-        /*
+
+
         if (args.length != 2) {
             System.out.println("Необходимо указать два аргумента!");
             System.exit(1);
         }
-
 
         Integer port = FieldReaderServer.readPort(args[0]);
         String nameOfFile = args[1];
@@ -35,10 +35,6 @@ public class App {
             nameOfFile= FieldReaderServer.askFile();
         }
 
-         */
-
-        int port =2222;
-        String nameOfFile = "src\\input_data.xml";
 
         try {
             CollectionManager collectionManager = new CollectionManager();

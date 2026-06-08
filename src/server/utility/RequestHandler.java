@@ -1,5 +1,8 @@
 package server.utility;
 
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+
 import common.commands.CommandRequest;
 import common.interaction.Response;
 import common.utility.ResponseBuilder;
@@ -12,6 +15,8 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.Selector;
 
 public class RequestHandler {
+
+    //private static final Logger logger = LoggerFactory.getLogger(RequestHandler.class);
 
     private static final int BUFFER_SIZE = 262144;
 
@@ -30,13 +35,14 @@ public class RequestHandler {
             CommandRequest request = Serializer.deserialize(requestBytes);
 
             System.out.println("<- Получен запрос: " + request.getNameOfCommand() + " от " + clientAddress);
+            //logger.info("<- Получен запрос: {} от {}", request.getNameOfCommand(), clientAddress);
 
             Response response = processCommand(request, console);
 
-            
             ResponseSender.sendResponse(channel, clientAddress, response);
 
         } catch (Exception e) {
+            //logger.error("Ошибка при обработке запроса от {}", clientAddress, e);
             ResponseBuilder.appendLn("Критическая ошибка сервера: " + e.getMessage());
 
             Response errorResponse = new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
@@ -46,7 +52,6 @@ public class RequestHandler {
                     ResponseSender.sendResponse(channel, clientAddress, errorResponse);
                 }
             } catch (Exception ignored) {}
-
             e.printStackTrace();
         }
         ResponseBuilder.clear();
@@ -56,6 +61,8 @@ public class RequestHandler {
         try {
             String commandName = request.getNameOfCommand();
             String argument = request.getArgument() != null ? request.getArgument().toString() : "";
+
+            //logger.info("Начало выполнения команды: {}", commandName);
 
             ExitCodeCommand result;
 
@@ -73,9 +80,12 @@ public class RequestHandler {
 
             Response response = new Response(result, ResponseBuilder.getOutput());
             System.out.println(ResponseBuilder.getOutput());
+
+            //logger.info("Команда '{}' выполнена", commandName);
             return response;
 
         } catch (Exception e) {
+            //logger.error("Ошибка выполнения команды '{}'", request.getNameOfCommand(), e);
             ResponseBuilder.appendLn("Ошибка выполнения команды '" + request.getNameOfCommand() + "': " + e.getMessage());
             return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
         }

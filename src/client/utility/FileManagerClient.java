@@ -3,9 +3,7 @@ package client.utility;
 import java.io.*;
 import java.util.*;
 
-/**
- * Менеджер работы с файлами.
- */
+
 public class FileManagerClient {
     static public enum ModeOfFileManager {
         READ_COLLECTION,
@@ -27,9 +25,7 @@ public class FileManagerClient {
         {
             return null;
         }
-        /*while (Validator.validateNameOfFile(nameOfFile,ModeOfFileManager.READ_SCRIPT)==false){
-            nameOfFile=FieldReader.askFile();
-        }*/
+        
         try (BufferedReader in = new BufferedReader(new FileReader(nameOfFile))) {
             String st;
             while ((st = in.readLine()) != null) {

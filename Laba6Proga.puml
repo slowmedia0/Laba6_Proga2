@@ -1,0 +1,220 @@
+@startuml
+' ==================== 1. МОДЕЛИ ДАННЫХ ====================
+
+package "common.models" {
+
+  class Vehicle implements Serializable, Comparable<Vehicle> {
+    - Integer id
+    - String name
+    - Coordinates coordinates
+    - LocalDate creationDate
+    - LocalDate lastUpdateDate
+    - float enginePower
+    - Long numberOfWheels
+    - VehicleType type
+    - FuelType fuelType
+    + Vehicle(...)
+    + compareTo(Vehicle): int
+    + toString(): String
+    + getAllChar()
+    + getters/setters
+  }
+
+  class Coordinates implements Serializable {
+    - Long x
+    - Double y
+    + Coordinates(Long x, Double y)
+    + getters/setters
+    + toString(): String
+  }
+
+  enum VehicleType {
+    SHIP
+    BICYCLE
+    HOVERBOARD
+  }
+
+  enum FuelType {
+    KEROSENE
+    ELECTRICITY
+    ALCOHOL
+    MANPOWER
+    PLASMA
+  }
+}
+
+Vehicle "1" *-- "1" Coordinates
+Vehicle "1" --> "1" VehicleType
+Vehicle "1" --> "1" FuelType
+
+@enduml
+
+@startuml
+' ==================== 2. КОМАНДЫ ====================
+
+interface Command {
+  + execute(): ExitCodeCommand
+  + getNameOfCommand(): String
+  + getDescriptionOfCommand(): String
+  + getArgument(): String
+  + validate(): ExitCodeCommand
+}
+
+abstract class AbstractCommand implements Command {
+  - String nameOfCommand
+  - String descriptionOfCommand
+  - StringBuilder output
+  + AbstractCommand(name, desc)
+  + println(String)
+  + print(String)
+}
+
+class CommandRequest implements Serializable {
+  - Command commandRequest
+}
+
+enum ExitCodeCommand {
+  OK
+  ERROR
+  EXIT
+  CTRL_C
+}
+
+' Наследование команд
+AbstractCommand <|-- HelpCommand
+AbstractCommand <|-- InfoCommand
+AbstractCommand <|-- ShowCommand
+AbstractCommand <|-- AddCommand
+AbstractCommand <|-- UpdateIdCommand
+AbstractCommand <|-- RemoveByIdCommand
+AbstractCommand <|-- ClearCommand
+AbstractCommand <|-- ExecuteScriptCommand
+AbstractCommand <|-- ExitCommand
+AbstractCommand <|-- RemoveGreaterCommand
+AbstractCommand <|-- ReorderCommand
+AbstractCommand <|-- SortCommand
+AbstractCommand <|-- SumOfEnginePowerCommand
+AbstractCommand <|-- PrintFieldAscendingNumberOfWheelsCommand
+AbstractCommand <|-- PrintFieldDescendingNumberOfWheelsCommand
+AbstractCommand <|-- SaveCommand
+
+Command <|.. AbstractCommand
+
+@enduml
+
+@startuml
+' ==================== 3. ВЗАИМОДЕЙСТВИЕ (Interaction) ====================
+
+package "common.interaction" {
+
+  class Request implements Serializable {
+    - Command commandRequest
+    + getCommandRequest()
+  }
+
+  class Response implements Serializable {
+    - ExitCodeCommand status
+    - String message
+    - String commandName
+    - String fileName
+    - byte[] fileData
+    + isSuccess(): boolean
+    + getters/setters
+  }
+
+  class ResponseChunk implements Serializable {
+    - int chunkNumber
+    - int totalChunks
+    - byte[] data
+    - boolean isLast
+  }
+}
+
+Request --> Command
+Response --> ExitCodeCommand
+
+@enduml
+
+@startuml
+' ==================== 4. АРХИТЕКТУРА CLIENT ====================
+
+package client {
+  class App
+  class UDPClient
+}
+
+package "client.utility" {
+  class UserHandler
+  class FileManagerClient
+  class FieldReaderClient
+}
+
+App --> UDPClient
+App --> UserHandler
+UDPClient --> Request : send
+UDPClient <-- Response : receive (with chunks)
+
+note right of UDPClient
+  • UDP DatagramSocket
+  • Чанкирование больших ответов
+  • GZIP сжатие
+  • Сериализация
+end note
+
+@enduml
+
+@startuml
+' ==================== 5. АРХИТЕКТУРА SERVER ====================
+
+package server {
+  class App
+  class UDPServer
+}
+
+package "server.utility" {
+  class Console
+  class CollectionManager
+  class FileManager
+  class CommandManger
+}
+
+App --> UDPServer
+UDPServer --> Console
+Console --> CommandManger
+CommandManger --> Command : execute commands
+CollectionManager o-- Vehicle : manages collection
+
+note right of UDPServer
+  • Принимает Request
+  • Выполняет команду
+  • Возвращает Response (chunked)
+end note
+
+@enduml
+
+@startuml
+' ==================== 6. ОБЩАЯ СТРУКТУРА ПРОЕКТА ====================
+
+package common {
+  package models
+  package commands
+  package interaction
+  package utility
+  package exceptions
+}
+
+package client
+package server
+
+common -- client
+common -- server
+
+note bottom of common
+  Общие сериализуемые объекты:
+  - Модели
+  - Команды
+  - Request / Response
+  - ExitCodeCommand
+end note
+
+@enduml

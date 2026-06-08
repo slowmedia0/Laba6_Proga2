@@ -9,46 +9,42 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Менеджер команд приложения.
- */
+
 public class CommandManger {
-    /** Список всех зарегистрированных команд. */
+    
     private final List<Command> commands;
-    /** Команда вывода справки. */
+    
     private final HelpCommand helpCommand;
-    /** Команда вывода информации о коллекции. */
+    
     private final InfoCommand infoCommand;
-    /** Команда вывода элементов коллекции. */
+    
     private final ShowCommand showCommand;
-    /** Команда добавления элемента. */
+    
     private final AddCommand  addCommand;
-    /** Команда обновления элемента по id. */
+    
     private final UpdateIdCommand updateIdCommand;
-    /** Команда удаления элемента по id. */
+    
     private final RemoveByIdCommand removeByIdCommand;
-    /** Команда очистки коллекции. */
+    
     private final ClearCommand clearCommand;
-    /** Команда исполнения скрипта. */
+    
     private final ExecuteScriptCommand executeScriptCommand;
-    /** Команда завершения программы. */
+    
     private final ExitCommand exitCommand;
-    /** Команда удаления элементов, превышающих заданный. */
+    
     private final RemoveGreaterCommand removeGreaterCommand;
-    /** Команда изменения порядка элементов. */
+    
     private final ReorderCommand reorderCommand;
-    /** Команда сортировки коллекции. */
+    
     private final SortCommand sortCommand;
-    /** Команда подсчёта суммы мощности двигателя. */
+    
     private final SumOfEnginePowerCommand sumOfEnginePowerCommand;
-    /** Команда вывода количества колёс по возрастанию. */
+    
     private final PrintFieldAscendingNumberOfWheelsCommand printFieldAscendingNumberOfWheelsCommand;
-    /** Команда вывода количества колёс по убыванию. */
+    
     private final PrintFieldDescendingNumberOfWheelsCommand printFieldDescendingNumberOfWheelsCommand;
 
-    /**
-     * Создаёт менеджер команд.
-     */
+    
     public CommandManger(HelpCommand helpCommand,InfoCommand infoCommand, ShowCommand showCommand, AddCommand addCommand, UpdateIdCommand updateIdCommand, RemoveByIdCommand removeByIdCommand, ClearCommand clearCommand, ExecuteScriptCommand executeScriptCommand, ExitCommand exitCommand, RemoveGreaterCommand removeGreaterCommand, ReorderCommand reorderCommand, SortCommand sortCommand, SumOfEnginePowerCommand sumOfEnginePowerCommand, PrintFieldAscendingNumberOfWheelsCommand printFieldAscendingNumberOfWheelsCommand, PrintFieldDescendingNumberOfWheelsCommand printFieldDescendingNumberOfWheelsCommand) {
         this.helpCommand=helpCommand;
         this.infoCommand = infoCommand;
@@ -219,9 +215,7 @@ public class CommandManger {
 
 
 
-    /**
-     * Универсальный метод для запуска команд (используется Console)
-     */
+    
     public ExitCodeCommand execute(String mnemonics, String argument) throws CommandNotExist{
         String cmd = (mnemonics == null) ? "" : mnemonics.toLowerCase().trim();
 
@@ -248,9 +242,7 @@ public class CommandManger {
         }
     }
 
-    /**
-     * Универсальный метод для команд с Vehicle
-     */
+    
     public ExitCodeCommand execute(String mnemonics, String argument, Vehicle vehicle, String FileName, byte[] FileData) throws CommandNotExist {
         String cmd = (mnemonics == null) ? "" : mnemonics.toLowerCase().trim();
 

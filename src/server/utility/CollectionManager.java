@@ -8,9 +8,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Менеджер коллекции транспортных средств.
- */
+
 public class CollectionManager {
 
     private Stack<Vehicle> C = new Stack<>();

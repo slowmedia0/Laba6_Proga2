@@ -20,9 +20,7 @@ import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.*;
 
-/**
- * Менеджер работы с файлами.
- */
+
 public class FileManager {
 
     public enum ModeOfFileManager {

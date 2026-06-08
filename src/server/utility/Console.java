@@ -11,9 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-/**
- * Класс консольного интерфейса приложения.
- */
+
 public class Console {
 
     public ExitCodeCommand exitCodeStatus = ExitCodeCommand.CTRL_C;
@@ -36,7 +34,7 @@ public class Console {
         this.collectionManager = collectionManager;
     }
 
-    // ==================== ГЕТТЕРЫ И СЕТТЕРЫ (без изменений) ====================
+    
     public ExitCodeCommand getExitCodeStatus() { return exitCodeStatus; }
     public void setExitCodeStatus(ExitCodeCommand exitCodeStatus) { this.exitCodeStatus = exitCodeStatus; }
     public String getLoadFileName() { return loadFileName; }
@@ -45,7 +43,7 @@ public class Console {
     public boolean isFlagScript() { return flagScript; }
     public boolean isFlagReadCollection() { return flagReadCollection; }
 
-    // ==================== ЗАГРУЗКА КОЛЛЕКЦИИ (без изменений) ====================
+    
     public void loadCollection(File loadFile) throws IOException, ParserConfigurationException, SAXException {
         this.currentLoadFile = loadFile;
         flagReadCollection = true;
@@ -58,7 +56,7 @@ public class Console {
         flagReadCollection = false;
     }
 
-    // ==================== НОВЫЕ МЕТОДЫ (switch убран) ====================
+    
 
     public ExitCodeCommand launchCommand(String mnemonics, String argument) {
         try {

@@ -29,7 +29,8 @@ public class App {
         System.out.println("Использование: java -jar client.jar <host> <port>");
         System.out.println("Пример корректного использования: java -jar client.jar localhost 2222");
 
-        /*
+        
+
         if (args.length != 2) {
             System.out.println("Необходимо указать два аргумента!");
            System.exit(1);
@@ -37,10 +38,6 @@ public class App {
         String host = FieldReaderClient.readHost(args[0]);
         Integer port = FieldReaderClient.readPort(args[1]);
 
-         */
-
-        String host = "localhost";
-        int port =2222;
 
         System.out.println("Клиент запускается");
 
