@@ -5,6 +5,7 @@ package server.utility;
 
 import common.commands.CommandRequest;
 import common.interaction.Response;
+import common.utility.GZIPUtils;
 import common.utility.ResponseBuilder;
 import common.utility.Serializer;
 import common.ExitCodeCommand;
@@ -32,10 +33,26 @@ public class RequestHandler {
             byte[] requestBytes = new byte[buffer.remaining()];
             buffer.get(requestBytes);
 
-            CommandRequest request = Serializer.deserialize(requestBytes);
 
-            System.out.println("<- Получен запрос: " + request.getNameOfCommand() + " от " + clientAddress);
-            //logger.info("<- Получен запрос: {} от {}", request.getNameOfCommand(), clientAddress);
+            CommandRequest request = tryDeserialize(requestBytes);
+            if (request != null) {
+                System.out.println("<- Запрос получен (" + requestBytes.length + " байт)");
+            }
+            else {
+                try {
+                    byte[] decompressed = GZIPUtils.decompress(requestBytes);
+                    request = tryDeserialize(decompressed);
+                    if (request != null) {
+                        System.out.println("Запрос распакован GZIP");
+                        System.out.println("<- Запрос получен (" + requestBytes.length + " байт)");
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+
+
+            System.out.println("<- Принят запрос: " + request.getNameOfCommand() + " от " + clientAddress);
+            //logger.info("<- Принят запрос: {} от {}", request.getNameOfCommand(), clientAddress);
 
             Response response = processCommand(request, console);
 
@@ -88,6 +105,14 @@ public class RequestHandler {
             //logger.error("Ошибка выполнения команды '{}'", request.getNameOfCommand(), e);
             ResponseBuilder.appendLn("Ошибка выполнения команды '" + request.getNameOfCommand() + "': " + e.getMessage());
             return new Response(ExitCodeCommand.ERROR, ResponseBuilder.getOutput());
+        }
+    }
+
+    private static CommandRequest tryDeserialize(byte[] data) {
+        try {
+            return (CommandRequest) Serializer.deserialize(data);
+        } catch (Exception e) {
+            return null;
         }
     }
 }

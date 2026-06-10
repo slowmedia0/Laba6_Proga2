@@ -67,7 +67,7 @@ public class UDPClient {
                     System.out.println("Предупреждение: Запрос слишком большой (" + data.length + " байт), может быть потерян");
                 }
 
-                System.out.println("-> Попытка реконнекта:[" + (attempts + 1) + "/" + MAX_RETRIES + "] с повторной отправкой запроса "
+                System.out.println("-> Попытка коннекта:[" + (attempts + 1) + "/" + MAX_RETRIES + "] с повторной отправкой запроса "
                         + request.getNameOfCommand() + " (" + data.length + " байт)");
 
                 InetAddress address = InetAddress.getByName(host);
@@ -79,11 +79,11 @@ public class UDPClient {
             }
             catch (PortUnreachableException | SocketTimeoutException e) {
                 attempts++;
-                System.out.println("Сервер не отвечает. Попытка реконнекта " + attempts + "/" + MAX_RETRIES);
+                System.out.println("Сервер не отвечает. Попытка коннекта " + attempts + "/" + MAX_RETRIES);
             }
             catch (java.net.ConnectException | java.net.NoRouteToHostException e) {
                 attempts++;
-                System.out.println("Нет соединения с сервером (возможно, сервер не запущен или проблема с сетью). Попытка реконнекта "
+                System.out.println("Нет соединения с сервером (возможно, сервер не запущен или проблема с сетью). Попытка коннекта "
                         + attempts + "/" + MAX_RETRIES);
             }
             catch (java.net.UnknownHostException e) {
@@ -93,7 +93,7 @@ public class UDPClient {
             catch (Exception e) {
                 attempts++;
                 System.out.println("Неизвестная ошибка (" + e.getClass().getSimpleName() + "): "
-                        + e.getMessage() + ". Попытка реконнекта " + attempts + "/" + MAX_RETRIES);
+                        + e.getMessage() + ". Попытка коннекта " + attempts + "/" + MAX_RETRIES);
             }
 
             if (attempts < MAX_RETRIES) {
